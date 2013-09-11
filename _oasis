@@ -35,6 +35,13 @@ Executable lexer
   BuildDepends:       ocool
   Install:	      false
 
+Executable parser
+  MainIs:             parser.ml
+  Path:               bin
+  CompiledObject:     best
+  BuildDepends:       ocool
+  Install:	      false
+
 Document ocool
   Title:                Cool Compiler implemented by OCaml
   Type:                 ocamlbuild (0.3)

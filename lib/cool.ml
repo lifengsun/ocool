@@ -34,7 +34,7 @@ type formal = [
 
 type feature = [
   | `Method of objid * formal list * typeid * expr
-  | `Var    of objid * typeid * expr option
+  | `Attr   of objid * typeid * expr option
   ]
 
 type cls = [
