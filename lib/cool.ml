@@ -2,22 +2,23 @@ type objid = string
 type typeid = string
 
 type expr = [
+  | `Assign    of objid * expr
   | `DotMethod of expr * typeid option * objid * (expr list)
-  | `Method    of objid * expr list
+  | `Func      of objid * expr list
   | `If        of expr * expr * expr
   | `While     of expr * expr
   | `Block     of expr list
-  | `Let       of (objid * typeid * expr) list * expr
-  | `Case      of expr * (objid * typeid * expr) list
+  | `Let       of (objid * typeid * expr option) list * expr
+  | `Case      of expr * ((objid * typeid * expr) list)
   | `New       of typeid
   | `Isvoid    of expr
   | `Plus      of expr * expr
   | `Minus     of expr * expr
-  | `Prodct    of expr * expr
-  | `Divide    of expr * expr
-  | `Comp      of expr
-  | `Less      of expr * expr
-  | `LE        of expr * expr
+  | `Times     of expr * expr
+  | `Div       of expr * expr
+  | `Comm      of expr
+  | `Lt        of expr * expr
+  | `Le        of expr * expr
   | `Eq        of expr * expr
   | `Not       of expr
   | `PExpr     of expr
@@ -32,7 +33,7 @@ type formal = [
   ]
 
 type feature = [
-  | `Method of formal list * typeid * expr
+  | `Method of objid * formal list * typeid * expr
   | `Var    of objid * typeid * expr option
   ]
 
