@@ -1,0 +1,10 @@
+.gitignore
+_build/
+setup.data
+setup.log
+setup.ml
+myocamlbuild.ml
+configure
+Makefile
+*.native
+*.byte
