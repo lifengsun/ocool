@@ -1,34 +1,3 @@
 # OASIS_START
-# DO NOT EDIT (digest: 05da73dd47aaa09428d9541bec2e2971)
-# Ignore VCS directories, you can use the same kind of rule outside 
-# OASIS_START/STOP if you want to exclude directories that contains 
-# useless stuff for the build process
-<**/.svn>: -traverse
-<**/.svn>: not_hygienic
-".bzr": -traverse
-".bzr": not_hygienic
-".hg": -traverse
-".hg": not_hygienic
-".git": -traverse
-".git": not_hygienic
-"_darcs": -traverse
-"_darcs": not_hygienic
-# Library ocool
-"lib/ocool.cmxs": use_ocool
-"lib/lex.cmx": for-pack(Ocool)
-"lib/parse.cmx": for-pack(Ocool)
-<lib/*.ml{,i}>: pkg_core
-<lib/*.ml{,i}>: pkg_threads
-# Executable lexer
-<bin/lexer.{native,byte}>: use_ocool
-<bin/lexer.{native,byte}>: pkg_core
-<bin/lexer.{native,byte}>: pkg_threads
-# Executable parser
-<bin/parser.{native,byte}>: use_ocool
-<bin/parser.{native,byte}>: pkg_core
-<bin/parser.{native,byte}>: pkg_threads
-<bin/*.ml{,i}>: use_ocool
-<bin/*.ml{,i}>: pkg_core
-<bin/*.ml{,i}>: pkg_threads
 # OASIS_STOP
 true: use_menhir
