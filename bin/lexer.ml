@@ -2,7 +2,7 @@ open Core.Std
 open Lexing
 
 open Ocool
-open Lex
+open Parse
 
 let rec parse_and_print lexbuf =
   let token = Lex.read lexbuf in
@@ -37,7 +37,22 @@ let rec parse_and_print lexbuf =
   | LE              -> printf "LE\n"
   | DARROW          -> printf "DARROW\n"
   | STRING s        -> printf "STR_CONST \"%s\"\n" s
-  | SYM s           -> printf "'%s'\n" s
+  | LBRACE          -> printf "\'{\'\n"
+  | RBRACE          -> printf "\'}\'\n"
+  | SEMICOLON       -> printf "\';\'\n"
+  | LPAREN          -> printf "\'(\'\n"
+  | RPAREN          -> printf "\')\'\n"
+  | COMMA           -> printf "\',\'\n"
+  | COLON           -> printf "\':\'\n"
+  | AT              -> printf "\'@\'\n"
+  | DOT             -> printf "\'.\'\n"
+  | PLUS            -> printf "\'+\'\n"
+  | MINUS           -> printf "\'-\'\n"
+  | TIMES           -> printf "\'*\'\n"
+  | DIV             -> printf "\'/\'\n"
+  | TILDE           -> printf "\'~\'\n"
+  | LT              -> printf "\'<\'\n"
+  | EQ              -> printf "\'=\'\n"
   | EOF             -> ()
   );
   if token <> EOF then parse_and_print lexbuf

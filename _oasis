@@ -19,7 +19,9 @@ Library ocool
   Path:               lib
   FindlibName:        ocool
   Pack:               true
-  Modules:            Lex
+  Modules:            Lex,
+                      Parse
+  BuildTools:         menhir
   BuildDepends:       core,
                       threads
   XMETARequires:      core,

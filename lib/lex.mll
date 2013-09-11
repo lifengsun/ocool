@@ -1,39 +1,8 @@
 {
 open Lexing
+open Parse
 
 exception SyntaxError of string
-
-type token =
-  | CLASS
-  | ELSE
-  | FALSE
-  | FI
-  | IF
-  | IN
-  | INHERITS
-  | ISVOID
-  | LET
-  | LOOP
-  | POOL
-  | THEN
-  | WHILE
-  | CASE
-  | ESAC
-  | NEW
-  | OF
-  | NOT
-  | TRUE
-  | SELF
-  | SELF_TYPE
-  | TYPEID of string
-  | OBJECTID of string
-  | INT of int
-  | STRING of string
-  | ASSIGN
-  | LE
-  | DARROW
-  | SYM of string
-  | EOF
 
 let next_line lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -100,8 +69,22 @@ rule read = parse
 | "(*"     { read_block_comment 1 lexbuf }
 | "--"     { read_line_comment lexbuf }
 | "<="     { LE }
-| ['{''}'';''('')'','':''@''.''+''-''*''/''~''<''=']
-           { SYM (Lexing.lexeme lexbuf) }
+| '{'      { LBRACE }
+| '}'      { RBRACE }
+| ';'      { SEMICOLON }
+| '('      { LPAREN }
+| ')'      { RPAREN }
+| ','      { COMMA }
+| ':'      { COLON }
+| '@'      { AT }
+| '.'      { DOT }
+| '+'      { PLUS }
+| '-'      { MINUS }
+| '*'      { TIMES }
+| '/'      { DIV }
+| '~'      { TILDE }
+| '<'      { LT }
+| '='      { EQ }
 | newline  { next_line lexbuf; read lexbuf }
 | eof      { EOF }
 and read_string buf = parse
