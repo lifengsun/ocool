@@ -116,6 +116,7 @@ and read_block_comment n = parse
 | "(*"     { read_block_comment (n + 1) lexbuf }
 | "*)"     { if n > 1 then read_block_comment (n - 1) lexbuf else read lexbuf }
 | "\n"     { next_line lexbuf; read_block_comment n lexbuf }
+| eof      { raise (SyntaxError ("Block comment is not terminated")) }
 | _        { read_block_comment n lexbuf }
 and read_line_comment = parse
 | "\n"     { next_line lexbuf; read lexbuf }
