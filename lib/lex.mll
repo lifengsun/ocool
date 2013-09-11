@@ -72,41 +72,40 @@ let newline  = '\r' | '\n' | "\r\n"
 
 rule read = parse
 | space+   { read lexbuf }
-| class    { (lexbuf.lex_curr_p.pos_lnum, CLASS) }
-| else     { (lexbuf.lex_curr_p.pos_lnum, ELSE) }
-| false    { (lexbuf.lex_curr_p.pos_lnum, FALSE) }
-| fi       { (lexbuf.lex_curr_p.pos_lnum, FI) }
-| if       { (lexbuf.lex_curr_p.pos_lnum, IF) }
-| in       { (lexbuf.lex_curr_p.pos_lnum, IN) }
-| inherits { (lexbuf.lex_curr_p.pos_lnum, INHERITS) }
-| isvoid   { (lexbuf.lex_curr_p.pos_lnum, ISVOID) }
-| let_     { (lexbuf.lex_curr_p.pos_lnum, LET) }
-| loop     { (lexbuf.lex_curr_p.pos_lnum, LOOP) }
-| pool     { (lexbuf.lex_curr_p.pos_lnum, POOL) }
-| then     { (lexbuf.lex_curr_p.pos_lnum, THEN) }
-| while    { (lexbuf.lex_curr_p.pos_lnum, WHILE) }
-| case     { (lexbuf.lex_curr_p.pos_lnum, CASE) }
-| esac     { (lexbuf.lex_curr_p.pos_lnum, ESAC) }
-| new      { (lexbuf.lex_curr_p.pos_lnum, NEW) }
-| of       { (lexbuf.lex_curr_p.pos_lnum, OF) }
-| not      { (lexbuf.lex_curr_p.pos_lnum, NOT) }
-| true     { (lexbuf.lex_curr_p.pos_lnum, TRUE) }
-| int      { (lexbuf.lex_curr_p.pos_lnum,
-	      INT (int_of_string (Lexing.lexeme lexbuf))) }
-| typeid   { (lexbuf.lex_curr_p.pos_lnum, TYPEID (Lexing.lexeme lexbuf)) }
-| objectid { (lexbuf.lex_curr_p.pos_lnum, OBJECTID (Lexing.lexeme lexbuf)) }
+| class    { CLASS }
+| else     { ELSE }
+| false    { FALSE }
+| fi       { FI }
+| if       { IF }
+| in       { IN }
+| inherits { INHERITS }
+| isvoid   { ISVOID }
+| let_     { LET }
+| loop     { LOOP }
+| pool     { POOL }
+| then     { THEN }
+| while    { WHILE }
+| case     { CASE }
+| esac     { ESAC }
+| new      { NEW }
+| of       { OF }
+| not      { NOT }
+| true     { TRUE }
+| int      { INT (int_of_string (Lexing.lexeme lexbuf)) }
+| typeid   { TYPEID (Lexing.lexeme lexbuf) }
+| objectid { OBJECTID (Lexing.lexeme lexbuf) }
 | '"'      { read_string (Buffer.create 20) lexbuf }
-| "<-"     { (lexbuf.lex_curr_p.pos_lnum, ASSIGN) }
-| "=>"     { (lexbuf.lex_curr_p.pos_lnum, DARROW) }
+| "<-"     { ASSIGN }
+| "=>"     { DARROW }
 | "(*"     { read_block_comment 1 lexbuf }
 | "--"     { read_line_comment lexbuf }
-| "<="     { (lexbuf.lex_curr_p.pos_lnum, LE) }
+| "<="     { LE }
 | ['{''}'';''('')'','':''@''.''+''-''*''/''~''<''=']
-           { (lexbuf.lex_curr_p.pos_lnum, SYM (Lexing.lexeme lexbuf)) }
+           { SYM (Lexing.lexeme lexbuf) }
 | newline  { next_line lexbuf; read lexbuf }
-| eof      { (lexbuf.lex_curr_p.pos_lnum, EOF) }
+| eof      { EOF }
 and read_string buf = parse
-| '"'      { (lexbuf.lex_curr_p.pos_lnum, STRING (Buffer.contents buf)) }
+| '"'      { STRING (Buffer.contents buf) }
 | '\\' _   { Buffer.add_string buf (Lexing.lexeme lexbuf);
 	     read_string buf lexbuf }
 | eof      { raise (SyntaxError ("String is not terminated")) }

@@ -5,9 +5,10 @@ open Ocool
 open Lex
 
 let rec parse_and_print lexbuf =
-  let lineno, lexeme = Lex.read lexbuf in
-  if lexeme <> EOF then printf "#%d " lineno;
-  (match lexeme with
+  let token = Lex.read lexbuf in
+  let lineno = lexbuf.lex_curr_p.pos_lnum in
+  if token <> EOF then printf "#%d " lineno;
+  (match token with
   | CLASS           -> printf "CLASS\n"
   | ELSE            -> printf "ELSE\n"
   | FALSE           -> printf "BOOL_CONST false\n"
@@ -39,7 +40,7 @@ let rec parse_and_print lexbuf =
   | SYM s           -> printf "'%s'\n" s
   | EOF             -> ()
   );
-  if lexeme <> EOF then parse_and_print lexbuf
+  if token <> EOF then parse_and_print lexbuf
 
 let parse filename =
   let inx = In_channel.create filename in
