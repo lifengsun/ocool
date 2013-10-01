@@ -5,49 +5,116 @@ open Ocool
 open Parse
 open Lex
 
-let print_expr outx expr = ()
-let print_formals outx formals = ()
+let fname = ref ""
 
-let print_feature outx = function
+let print_space ~level =
+  printf "%s" (String.init (2 * level) ~f:(fun _ -> ' '))
+
+let rec print_expr ~level expr =
+  print_space level; printf "#1\n";
+  match expr with
+  | `Bool v ->
+      print_space level; printf "_bool\n";
+      print_space (level + 1); printf "%d\n" (if v then 1 else 0);
+      print_space level; printf ": _no_type\n"
+  | `Int _    -> ()
+  | `String s ->
+      print_space level; printf "_string\n";
+      print_space (level + 1); printf "\"%s\"\n" s;
+      print_space level; printf ": _no_type\n"
+  | `Ident id ->
+      print_space level; printf "_object\n";
+      print_space (level + 1); printf "%s\n" id;
+      print_space level; printf ": _no_type\n"
+  | `Assign _ -> ()
+  | `Dispatch (expr, typeid, objid, exprlst) ->
+      print_space level; printf "_dispatch\n";
+      print_expr (level + 1) expr;
+      print_space (level + 1); printf "%s\n" objid;
+      print_space (level + 1); printf "(\n";
+      print_space (level + 1); printf ")\n";
+      print_space level; printf ": _no_type\n"
+  | `Cond _ -> ()
+  | `Loop _ -> ()
+  | `Block exprlst ->
+      print_space level; printf "_block\n";
+      List.iter exprlst ~f:(print_expr ~level:(level + 1));
+      print_space level; printf ": _no_type\n"
+  | `Let _    -> ()
+  | `Case _   -> ()
+  | `New typeid ->
+      print_space level; printf "_new\n";
+      print_space (level + 1); printf "%s\n" typeid;
+      print_space level; printf ": _no_type\n"
+  | `Isvoid _ -> ()
+  | `Plus _ -> ()
+  | `Minus _ -> ()
+  | `Times _ -> ()
+  | `Div _ -> ()
+  | `Lt _ -> ()
+  | `Le _ -> ()
+  | `Eq _ -> ()
+  | `Complmnt _ -> ()
+  | `Not _ -> ()
+  | `Paren _ -> ()
+  | _ -> ()
+
+let print_formal ~level (`Formal (objid, typeid)) =
+  print_space level; printf "#1\n";
+  print_space level; printf "_formal\n";
+  print_space (level + 1); printf "%s\n" objid;
+  print_space (level + 1); printf "%s\n" typeid
+
+let print_feature ~level feature =
+  print_space level; printf "#1\n";
+  match feature with
   | `Method (objid, formals, typeid, expr) ->
-      printf "method: %s(%a) : %s\n expr: %a\n"
-	objid print_formals formals typeid print_expr expr
-  | `Attr (objid, typeid, None) ->
-      printf "attr: %s : %s\n" objid typeid
-  | `Attr (objid, typeid, Some expr) ->
-      printf "attr: %s : %s\ninit: %a\n" objid typeid print_expr expr
+      print_space level; printf "_method\n";
+      print_space (level + 1); printf "%s\n" objid;
+	List.iter formals ~f:(print_formal ~level:(level + 1));
+      print_space (level + 1); printf "%s\n" typeid;
+      print_expr (level + 1) expr
+  | `Attr (objid, typeid, expr) ->
+      print_space level; printf "_attr\n";
+      print_space (level + 1); printf "%s\n" objid;
+      print_space (level + 1); printf "%s\n" typeid
 
-let print_features outx features =
-  List.iter ~f:(print_feature outx) features
-    
-let rec print_ast outx = function
-  | `Class (clsname, Some basename, features) ->
-      printf "class %s derived from %s\n%a" clsname basename print_features features
-  | `Class (clsname, None, features) ->
-      printf "class %s\n%a" clsname print_features features
+let rec print_class ~level (`Class (clsname, basename, features)) =
+  print_space level; printf "#1\n";
+  print_space level; printf "_class\n";
+  print_space (level + 1); printf "%s\n" clsname;
+  (match basename with
+  | Some v -> print_space (level + 1); printf "%s\n" v
+  | None   -> ());
+  print_space (level + 1); printf "\"%s\"\n" !fname;
+  print_space (level + 1); printf "(\n";
+  List.iter features ~f:(print_feature ~level:(level + 1));
+  print_space (level + 1); printf ")\n"
 
-let print_position outx lexbuf =
+let print_position ofile lexbuf =
   let pos = lexbuf.lex_curr_p in
-  fprintf outx "%s:%d:%d" pos.pos_fname
-    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+  eprintf "%s:%d:%d" pos.pos_fname pos.pos_lnum
+    (pos.pos_cnum - pos.pos_bol + 1)
 
 let parse_with_error lexbuf =
   try Parse.prog Lex.read lexbuf with
   | SyntaxError msg ->
-      fprintf stderr "%a: %s\n" print_position lexbuf msg;
+      eprintf "%a: %s\n" print_position lexbuf msg;
       []
   | Parse.Error ->
-      fprintf stderr "%a: syntax error\n" print_position lexbuf;
+      eprintf "%a: syntax error\n" print_position lexbuf;
       exit (-1)
 
-let rec parse_and_print lexbuf =
-  List.iter (parse_with_error lexbuf) ~f:(printf "%a" print_ast)
+let parse_and_print lexbuf =
+  printf "#1\n";
+  printf "_program\n";
+  List.iter (parse_with_error lexbuf) ~f:(print_class ~level:1)
 
 let parse filename =
-  In_channel.with_file filename ~f:(fun ifile ->
+  fname := filename;
+  In_channel.with_file !fname ~f:(fun ifile ->
     let lexbuf = Lexing.from_channel ifile in
-    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
-  (* printf "#name \"%s\"\n" filename; *)
+    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = !fname };
     parse_and_print lexbuf)
 
 let () = parse Sys.argv.(1)
