@@ -44,11 +44,10 @@ let rec parse_and_print lexbuf =
   List.iter (parse_with_error lexbuf) ~f:(printf "%a" print_ast)
 
 let parse filename =
-  let inx = In_channel.create filename in
-  let lexbuf = Lexing.from_channel inx in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
+  In_channel.with_file filename ~f:(fun ifile ->
+    let lexbuf = Lexing.from_channel ifile in
+    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
   (* printf "#name \"%s\"\n" filename; *)
-  parse_and_print lexbuf;
-  In_channel.close inx
+    parse_and_print lexbuf)
 
 let () = parse Sys.argv.(1)
