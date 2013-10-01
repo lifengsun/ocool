@@ -55,8 +55,11 @@ typeid:
 | SELF_TYPE { "SELF_TYPE" }
 
 features:
+    rev_features { List.rev $1 }
+
+rev_features:
 | { [] }
-| f = feature; SEMICOLON; fs = features { f :: fs }
+| rev_features; feature; SEMICOLON  { $2 :: $1 }
 
 feature:
 | objid; LPAREN; formals; RPAREN; COLON; typeid; LBRACE; expr; RBRACE
@@ -89,15 +92,21 @@ objinits:
     lst = separated_list(COMMA, objinit) { lst }
 
 exprs:
+    rev_exprs { List.rev $1 }
+
+rev_exprs:
 | { [] }
-| e = expr; SEMICOLON; es = exprs { e :: es }
+| rev_exprs; expr; SEMICOLON { $2 :: $1 }
 
 case:
     objid; COLON; typeid; DARROW; expr { ($1, $3, $5) }
 
 cases:
+    rev_cases { List.rev $1 }
+
+rev_cases:
 | { [] }
-| c = case; SEMICOLON; cs = cases; { c :: cs }
+| rev_cases; case; SEMICOLON { $2 :: $1 }
 
 expr:
 | objid; ASSIGN; expr
