@@ -52,9 +52,9 @@ rev_classes:
 
 cls:
 | CLASS; typeid; INHERITS; typeid; LBRACE; features; RBRACE
-    { `Class ($2, Some $4, $6) }
+    { `Class ($2, $4, $6) }
 | CLASS; typeid; LBRACE; features; RBRACE
-    { `Class ($2, None, $4) }
+    { `Class ($2, "Object", $4) }
 
 typeid:
 | TYPEID { $1 }

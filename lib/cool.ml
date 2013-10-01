@@ -37,5 +37,5 @@ type feature = [
   ]
 
 type cls = [
-    `Class of typeid * typeid option * feature list
+    `Class of typeid * typeid * feature list
   ]
