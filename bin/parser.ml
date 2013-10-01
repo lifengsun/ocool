@@ -35,17 +35,13 @@ let parse_with_error lexbuf =
   try Parse.prog Lex.read lexbuf with
   | SyntaxError msg ->
       fprintf stderr "%a: %s\n" print_position lexbuf msg;
-      None
+      []
   | Parse.Error ->
       fprintf stderr "%a: syntax error\n" print_position lexbuf;
       exit (-1)
 
 let rec parse_and_print lexbuf =
-  match parse_with_error lexbuf with
-  | Some v ->
-      printf "%a" print_ast v;
-      parse_and_print lexbuf
-  | None -> ()
+  List.iter (parse_with_error lexbuf) ~f:(printf "%a" print_ast)
 
 let parse filename =
   let inx = In_channel.create filename in

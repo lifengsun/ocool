@@ -38,11 +38,17 @@ exception SyntaxError of string
 %left     AT
 %left     DOT
 
-%start <Cool.cls option> prog
+%start <Cool.cls list> prog
 %%
 prog:
-| EOF  { None }
-| cls; SEMICOLON { Some $1 }
+| classes; EOF { $1 }
+
+classes:
+    rev_classes { List.rev $1 }
+
+rev_classes:
+| { [] }
+| rev_classes; cls; SEMICOLON { $2 :: $1 }
 
 cls:
 | CLASS; typeid; INHERITS; typeid; LBRACE; features; RBRACE
