@@ -21,7 +21,7 @@ exception SyntaxError of string
 %token <string> TYPEID OBJECTID STRING
 %token LBRACE RBRACE LPAREN RPAREN
 %token PLUS MINUS TIMES DIV
-%token SEMICOLON COMMA COLON AT DOT TILDE LT EQ
+%token SEMICOLON COMMA COLON AT DOT COMPLMNT LT EQ
 %token <int> INT
 %token ASSIGN
 %token LE
@@ -34,7 +34,7 @@ exception SyntaxError of string
 %left     PLUS MINUS
 %left     TIMES DIV
 %right    ISVOID
-%right    TILDE
+%right    COMPLMNT
 %left     AT
 %left     DOT
 
@@ -118,15 +118,15 @@ expr:
 | objid; ASSIGN; expr
     { `Assign ($1, $3) }
 | expr; AT; typeid; DOT; objid; LPAREN; args; RPAREN
-    { `DotMethod ($1, Some $3, $5, $7) }
+    { `Dispatch ($1, Some $3, $5, $7) }
 | expr; DOT; objid; LPAREN; args; RPAREN
-    { `DotMethod ($1, None, $3, $5) }
+    { `Dispatch ($1, None, $3, $5) }
 | objid; LPAREN; args; RPAREN
-    { `Func ($1, $3) }
+    { `Dispatch (`Ident "self", None, $1, $3) }
 | IF; expr; THEN; expr; ELSE; expr; FI
-    { `If ($2, $4, $6) }
+    { `Cond ($2, $4, $6) }
 | WHILE; expr; LOOP; expr; POOL
-    { `While ($2, $4) }
+    { `Loop ($2, $4) }
 | LBRACE; e = expr; SEMICOLON; es = exprs; RBRACE
     { `Block (e :: es) }
 | LET; objinits; IN; expr
@@ -140,12 +140,12 @@ expr:
 | expr; LT;    expr { `Lt ($1, $3) }
 | expr; LE;    expr { `Le ($1, $3) }
 | expr; EQ;    expr { `Eq ($1, $3) }
-| NEW;    typeid { `New $2 }
-| ISVOID; expr   { `Isvoid $2 }
-| TILDE;  expr   { `Comm $2 }
-| NOT;    expr   { `Not $2 }
-| LPAREN; expr; RPAREN { `PExpr $2 }
-| OBJECTID { `Object $1 }
+| NEW;      typeid { `New $2 }
+| ISVOID;   expr   { `Isvoid $2 }
+| COMPLMNT; expr   { `Complmnt $2 }
+| NOT;      expr   { `Not $2 }
+| LPAREN; expr; RPAREN { `Paren $2 }
+| OBJECTID { `Ident $1 }
 | INT      { `Int $1 }
 | STRING   { `String $1 }
 | TRUE     { `Bool true }

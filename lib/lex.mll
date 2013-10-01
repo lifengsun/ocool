@@ -82,7 +82,7 @@ rule read = parse
 | '-'      { MINUS }
 | '*'      { TIMES }
 | '/'      { DIV }
-| '~'      { TILDE }
+| '~'      { COMPLMNT }
 | '<'      { LT }
 | '='      { EQ }
 | newline  { next_line lexbuf; read lexbuf }

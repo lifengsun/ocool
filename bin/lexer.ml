@@ -50,7 +50,7 @@ let rec parse_and_print lexbuf =
   | MINUS           -> printf "\'-\'\n"
   | TIMES           -> printf "\'*\'\n"
   | DIV             -> printf "\'/\'\n"
-  | TILDE           -> printf "\'~\'\n"
+  | COMPLMNT        -> printf "\'~\'\n"
   | LT              -> printf "\'<\'\n"
   | EQ              -> printf "\'=\'\n"
   | EOF             -> ()
