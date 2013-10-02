@@ -1,7 +1,13 @@
 %{
+(* menhir does not work well with Core. *)
+(* open Core.Std *)
 open Lexing
 
 exception SyntaxError of string
+
+(* menhir generates code for Error exception which conflicts with the
+   one in Core, so we redefine it to make menhir happy. *)
+(* exception Error *)
 %}
 
 %token CLASS

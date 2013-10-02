@@ -1,3 +1,5 @@
 # OASIS_START
 # OASIS_STOP
 true: use_menhir
+#<lib/*.mly>: pkg_core
+#<lib/*.mly>: pkg_threads
