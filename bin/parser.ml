@@ -7,196 +7,124 @@ open Lex
 
 let fname = ref ""
 
-let print_space ~level =
-  printf "%s" (String.init (2 * level) ~f:(fun _ -> ' '))
+let out ~level ls =
+  let print_space ~level =
+    printf "%s" (String.init (2 * level) ~f:(fun _ -> ' '))
+  in
+  List.iter ls ~f:(fun (l, s) ->
+    print_space (level + l); printf "%s\n" s)
 
-let rec print_expr ~level expr =
-  match expr with
-  | `Bool v ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_bool\n";
-      print_space (level + 1); printf "%d\n" (if v then 1 else 0);
-      print_space level; printf ": _no_type\n"
-  | `Int v    ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_int\n";
-      print_space (level + 1); printf "%d\n" v;
-      print_space level; printf ": _no_type\n"
-  | `String s ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_string\n";
-      print_space (level + 1); printf "\"%s\"\n" s;
-      print_space level; printf ": _no_type\n"
-  | `Ident id ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_object\n";
-      print_space (level + 1); printf "%s\n" id;
-      print_space level; printf ": _no_type\n"
-  | `Assign (objid, expr) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_assign\n";
-      print_space (level + 1); printf "%s\n" objid;
-      print_expr (level + 1) expr;
-      print_space level; printf ": _no_type\n"
-  | `Dispatch (expr, typeid, objid, exprlst) ->
-      print_space level; printf "#1\n";
-      print_space level; (match typeid with
-      | None   -> printf "_dispatch\n"
-      | Some v -> printf "_static_dispatch\n");
-      print_expr (level + 1) expr;
-      (match typeid with
-      | None   -> ()
-      | Some v -> print_space (level + 1); printf "%s\n" v);
-      print_space (level + 1); printf "%s\n" objid;
-      print_space (level + 1); printf "(\n";
-      List.iter exprlst ~f:(print_expr ~level:(level + 1));
-      print_space (level + 1); printf ")\n";
-      print_space level; printf ": _no_type\n"
-  | `Cond (expr1, expr2, expr3) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_cond\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_expr (level + 1) expr3;
-      print_space level; printf ": _no_type\n"
-  | `Loop (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_loop\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Block exprlst ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_block\n";
-      List.iter exprlst ~f:(print_expr ~level:(level + 1));
-      print_space level; printf ": _no_type\n"
-  | `Let (objid, typeid, init, expr) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_let\n";
-      print_space (level + 1); printf "%s\n" objid;
-      print_space (level + 1); printf "%s\n" typeid;
-      (match init with
-      | None   ->
-	  print_space (level + 1); printf "#1\n";
-	  print_space (level + 1); printf "_no_expr\n";
-	  print_space (level + 1); printf ": _no_type\n"
-      | Some v -> print_expr (level + 1) v);
-      print_expr (level + 1) expr;
-      print_space level; printf ": _no_type\n"
-  | `Case (expr, lst) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_typcase\n";
-      print_expr (level + 1) expr;
-      List.iter lst ~f:(fun (objid, typeid, expr) ->
-	print_space (level + 1); printf "#1\n";
-	print_space (level + 1); printf "_branch\n";
-	print_space (level + 2); printf "%s\n" objid;
-	print_space (level + 2); printf "%s\n" typeid;
-	print_expr (level + 2) expr);
-      print_space level; printf ": _no_type\n"
-  | `New typeid ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_new\n";
-      print_space (level + 1); printf "%s\n" typeid;
-      print_space level; printf ": _no_type\n"
-  | `Isvoid expr ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_isvoid\n";
-      print_expr (level + 1) expr;
-      print_space level; printf ": _no_type\n"
-  | `Plus (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_plus\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Minus (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_sub\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Times (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_mul\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Div (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_divide\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Lt (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_lt\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Le (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_leq\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Eq (expr1, expr2) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_eq\n";
-      print_expr (level + 1) expr1;
-      print_expr (level + 1) expr2;
-      print_space level; printf ": _no_type\n"
-  | `Complmnt expr ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_neg\n";
-      print_expr (level + 1) expr;
-      print_space level; printf ": _no_type\n"
-  | `Not expr ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_comp\n";
-      print_expr (level + 1) expr;
-      print_space level; printf ": _no_type\n"
+let rec print_expr level = function
   | `Paren expr ->
       print_expr level expr
-  | _ -> ()
+  | expr ->
+      out ~level [(0, "#1")];
+      (match expr with
+      | `Bool v ->
+	  out ~level [(0, "_bool"); (1, if v then "1" else "0")]
+      | `Int v ->
+	  out ~level [(0, "_int"); (1, Int.to_string v)]
+      | `String s ->
+	  out ~level [(0, "_string"); (1, "\"" ^ s ^ "\"")]
+      | `Ident id ->
+	  out ~level [(0, "_object"); (1, id)]
+      | `Assign (objid, expr) ->
+	  out ~level [(0, "_assign"); (1, objid)];
+	  print_expr (level + 1) expr
+      | `Dispatch (expr, typeid, objid, exprlst) ->
+	  out ~level [(0, match typeid with
+	  | None   -> "_dispatch"
+	  | Some v -> "_static_dispatch")];
+	  print_expr (level + 1) expr;
+	  (match typeid with
+	  | None   -> ()
+	  | Some v -> out ~level [(1, v)]);
+	  out ~level [(1, objid); (1, "(")];
+	  List.iter exprlst ~f:(print_expr (level + 1));
+	  out ~level [(1, ")")]
+      | `Cond (expr1, expr2, expr3) ->
+	  out ~level [(0, "_cond")];
+	  List.iter [expr1; expr2; expr3] ~f:(print_expr (level + 1))
+      | `Loop (expr1, expr2) ->
+	  out ~level [(0, "_loop")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Block exprlst ->
+	  out ~level [(0, "_block")];
+	  List.iter exprlst ~f:(print_expr (level + 1))
+      | `Let (objid, typeid, init, expr) ->
+	  out ~level [(0, "_let"); (1, objid); (1, typeid)];
+	  (match init with
+	  | None   ->
+	      out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")]
+	  | Some v -> print_expr (level + 1) v);
+	  print_expr (level + 1) expr
+      | `Case (expr, lst) ->
+	  out ~level [(0, "_typcase")];
+	  print_expr (level + 1) expr;
+	  List.iter lst ~f:(fun (objid, typeid, expr) ->
+	    out ~level [(1, "#1"); (1, "_branch"); (2, objid); (2, typeid)];
+	    print_expr (level + 2) expr)
+      | `New typeid ->
+	  out ~level [(0, "_new"); (1, typeid)]
+      | `Isvoid expr ->
+	  out ~level [(0, "_isvoid")];
+	  print_expr (level + 1) expr
+      | `Plus (expr1, expr2) ->
+	  out ~level [(0, "_plus")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Minus (expr1, expr2) ->
+	  out ~level [(0, "_sub")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Times (expr1, expr2) ->
+	  out ~level [(0, "_mul")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Div (expr1, expr2) ->
+	  out ~level [(0, "_divide")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Lt (expr1, expr2) ->
+	  out ~level [(0, "_lt")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Le (expr1, expr2) ->
+	  out ~level [(0, "_leq")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Eq (expr1, expr2) ->
+	  out ~level [(0, "_eq")];
+	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
+      | `Complmnt expr ->
+	  out ~level [(0, "_neg")];
+	  print_expr (level + 1) expr
+      | `Not expr ->
+	  out ~level [(0, "_comp")];
+	  print_expr (level + 1) expr
+      | `Paren _ -> ());
+      match expr with
+      | `Paren _ -> ()
+      | _ ->
+	  out ~level [(0, ": _no_type")]
 
-let print_formal ~level (`Formal (objid, typeid)) =
-  print_space level; printf "#1\n";
-  print_space level; printf "_formal\n";
-  print_space (level + 1); printf "%s\n" objid;
-  print_space (level + 1); printf "%s\n" typeid
+let print_formal level (`Formal (objid, typeid)) =
+  out ~level [(0, "#1"); (0, "_formal"); (1, objid); (1, typeid)]
 
 let print_feature ~level = function
   | `Method (objid, formals, typeid, expr) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_method\n";
-      print_space (level + 1); printf "%s\n" objid;
-	List.iter formals ~f:(print_formal ~level:(level + 1));
-      print_space (level + 1); printf "%s\n" typeid;
+      out ~level [(0, "#1"); (0, "_method"); (1, objid)];
+	List.iter formals ~f:(print_formal (level + 1));
+      out ~level [(1, typeid)];
       print_expr (level + 1) expr
   | `Attr (objid, typeid, expr) ->
-      print_space level; printf "#1\n";
-      print_space level; printf "_attr\n";
-      print_space (level + 1); printf "%s\n" objid;
-      print_space (level + 1); printf "%s\n" typeid;
+      out ~level [(0, "#1"); (0, "_attr"); (1, objid); (1, typeid)];
       (match expr with
       | None ->
-	  print_space (level + 1); printf "#1\n";
-	  print_space (level + 1); printf "_no_expr\n";
-	  print_space (level + 1); printf ": _no_type\n"
+	  out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")];
       | Some v -> 
 	  print_expr (level + 1) v)
 
 
 let rec print_class ~level (`Class (clsname, basename, features)) =
-  print_space level; printf "#1\n";
-  print_space level; printf "_class\n";
-  print_space (level + 1); printf "%s\n" clsname;
-  print_space (level + 1); printf "%s\n" basename;
-  print_space (level + 1); printf "\"%s\"\n" !fname;
-  print_space (level + 1); printf "(\n";
+  out ~level [(0, "#1"); (0, "_class"); (1, clsname); (1, basename);
+	      (1, "\"" ^ !fname ^ "\""); (1, "(")];
   List.iter features ~f:(print_feature ~level:(level + 1));
-  print_space (level + 1); printf ")\n"
+  out ~level [(1, ")")]
 
 let print_position ofile lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -213,8 +141,7 @@ let parse_with_error lexbuf =
       exit (-1)
 
 let parse_and_print lexbuf =
-  printf "#1\n";
-  printf "_program\n";
+  out 0 [(0, "#1"); (0, "_program")];
   List.iter (parse_with_error lexbuf) ~f:(print_class ~level:1)
 
 let parse filename =
