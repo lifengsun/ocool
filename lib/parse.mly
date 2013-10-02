@@ -130,7 +130,8 @@ expr:
 | LBRACE; e = expr; SEMICOLON; es = exprs; RBRACE
     { `Block (e :: es) }
 | LET; objinits; IN; expr
-    { `Let ($2, $4) }
+    {  List.fold_right
+	 (fun (objid, typeid, ex) y -> `Let (objid, typeid, ex, y)) $2 $4 }
 | CASE; e = expr; OF; c = case; SEMICOLON; cs = cases; ESAC
     { `Case (e, c :: cs) }
 | expr; PLUS;  expr { `Plus ($1, $3) }

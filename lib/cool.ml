@@ -11,7 +11,7 @@ type expr = [
   | `Cond      of expr * expr * expr	(* 7.5 Conditionals *)
   | `Loop      of expr * expr		(* 7.6 Loops *)
   | `Block     of expr list		(* 7.7 Blocks *)
-  | `Let       of (objid * typeid * expr option) list * expr (* 7.8 Let *)
+  | `Let       of objid * typeid * expr option * expr	(* 7.8 Let *)
   | `Case      of expr * ((objid * typeid * expr) list)	     (* 7.9 Case *)
   | `New       of typeid		(* 7.10 New *)
   | `Isvoid    of expr			(* 7.11 Isvoid *)
