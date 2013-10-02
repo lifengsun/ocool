@@ -5,8 +5,6 @@ open Ocool
 open Parse
 open Lex
 
-let fname = ref ""
-
 let out ~level ls =
   let print_space ~level =
     printf "%s" (String.init (2 * level) ~f:(fun _ -> ' '))
@@ -119,36 +117,13 @@ let print_feature ~level = function
       | Some v -> 
 	  print_expr (level + 1) v)
 
-
-let rec print_class ~level (`Class (clsname, basename, features)) =
+let print_class fname level (`Class (clsname, basename, features)) =
   out ~level [(0, "#1"); (0, "_class"); (1, clsname); (1, basename);
-	      (1, "\"" ^ !fname ^ "\""); (1, "(")];
+	      (1, "\"" ^ fname ^ "\""); (1, "(")];
   List.iter features ~f:(print_feature ~level:(level + 1));
   out ~level [(1, ")")]
 
-let print_position ofile lexbuf =
-  let pos = lexbuf.lex_curr_p in
-  eprintf "%s:%d:%d" pos.pos_fname pos.pos_lnum
-    (pos.pos_cnum - pos.pos_bol + 1)
-
-let parse_with_error lexbuf =
-  try Parse.prog Lex.read lexbuf with
-  | SyntaxError msg ->
-      eprintf "%a: %s\n" print_position lexbuf msg;
-      []
-  | Parse.Error ->
-      eprintf "%a: syntax error\n" print_position lexbuf;
-      exit (-1)
-
-let parse_and_print lexbuf =
+let () =
+  let fname = Sys.argv.(1) in
   out 0 [(0, "#1"); (0, "_program")];
-  List.iter (parse_with_error lexbuf) ~f:(print_class ~level:1)
-
-let parse filename =
-  fname := filename;
-  In_channel.with_file !fname ~f:(fun ifile ->
-    let lexbuf = Lexing.from_channel ifile in
-    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = !fname };
-    parse_and_print lexbuf)
-
-let () = parse Sys.argv.(1)
+  List.iter (Cool.parse_exn fname) ~f:(print_class fname 1)

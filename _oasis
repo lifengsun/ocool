@@ -19,8 +19,11 @@ Library ocool
   Path:               lib
   FindlibName:        ocool
   Pack:               true
-  Modules:            Lex,
-                      Parse
+  Modules:            Cool,
+                      Ast,
+                      Lex,
+                      Parse,
+                      Semantics
   BuildTools:         menhir
   BuildDepends:       core,
                       threads
@@ -37,6 +40,13 @@ Executable lexer
 
 Executable parser
   MainIs:             parser.ml
+  Path:               bin
+  CompiledObject:     best
+  BuildDepends:       ocool
+  Install:	      false
+
+Executable semant
+  MainIs:             semant.ml
   Path:               bin
   CompiledObject:     best
   BuildDepends:       ocool
