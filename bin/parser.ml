@@ -12,105 +12,119 @@ let out ~level ls =
   List.iter ls ~f:(fun (l, s) ->
     print_space (level + l); printf "%s\n" s)
 
-let rec print_expr level = function
+let header level name = out ~level [(0, "#1"); (0, name)]
+
+let rec print_expr level expr =
+  let header = header level in
+  let print_exprs level exprs =
+    List.iter exprs ~f:(print_expr level)
+  in
+  (match expr with
+  | `Bool v ->
+      header "_bool";
+      out level [(1, if v then "1" else "0")]
+  | `Int v ->
+      header "_int";
+      out ~level [(1, Int.to_string v)]
+  | `String s ->
+      header "_string";
+      out ~level [(1, "\"" ^ s ^ "\"")]
+  | `Ident id ->
+      header "_object";
+      out ~level [(1, id)]
+  | `Assign (objid, expr) ->
+      header "_assign";
+      out ~level [(1, objid)];
+      print_expr (level + 1) expr
+  | `Dispatch (expr, typeid, objid, exprlst) ->
+      (match typeid with
+      | None   ->
+	  header "_dispatch";
+	  print_expr (level + 1) expr;
+      | Some v ->
+	  header "_static_dispatch";
+	  print_expr (level + 1) expr;
+	  out ~level [(1, v)]);
+      out ~level [(1, objid); (1, "(")];
+      print_exprs (level + 1) exprlst;
+      out ~level [(1, ")")]
+  | `Cond (expr1, expr2, expr3) ->
+      header "_cond";
+      print_exprs (level + 1) [expr1; expr2; expr3]
+  | `Loop (expr1, expr2) ->
+      header "_loop";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Block exprlst ->
+      header "_block";
+      print_exprs (level + 1) exprlst
+  | `Let (objid, typeid, init, expr) ->
+      header "_let";
+      out ~level [(1, objid); (1, typeid)];
+      (match init with
+      | None   ->
+	  out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")]
+      | Some v -> print_expr (level + 1) v);
+      print_expr (level + 1) expr
+  | `Case (expr, lst) ->
+      header "_typcase";
+      print_expr (level + 1) expr;
+      List.iter lst ~f:(fun (objid, typeid, expr) ->
+	out ~level [(1, "#1"); (1, "_branch"); (2, objid); (2, typeid)];
+	print_expr (level + 2) expr)
+  | `New typeid ->
+      header "_new";
+      out ~level [(1, typeid)]
+  | `Isvoid expr ->
+      header "_isvoid";
+      print_expr (level + 1) expr
+  | `Plus (expr1, expr2) ->
+      header "_plus";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Minus (expr1, expr2) ->
+      header "_sub";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Times (expr1, expr2) ->
+      header "_mul";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Div (expr1, expr2) ->
+      header "_divide";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Lt (expr1, expr2) ->
+      header "_lt";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Le (expr1, expr2) ->
+      header "_leq";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Eq (expr1, expr2) ->
+      header "_eq";
+      print_exprs (level + 1) [expr1; expr2]
+  | `Complmnt expr ->
+      header "_neg";
+      print_expr (level + 1) expr
+  | `Not expr ->
+      header "_comp";
+      print_expr (level + 1) expr
   | `Paren expr ->
-      print_expr level expr
-  | expr ->
-      out ~level [(0, "#1")];
-      (match expr with
-      | `Bool v ->
-	  out ~level [(0, "_bool"); (1, if v then "1" else "0")]
-      | `Int v ->
-	  out ~level [(0, "_int"); (1, Int.to_string v)]
-      | `String s ->
-	  out ~level [(0, "_string"); (1, "\"" ^ s ^ "\"")]
-      | `Ident id ->
-	  out ~level [(0, "_object"); (1, id)]
-      | `Assign (objid, expr) ->
-	  out ~level [(0, "_assign"); (1, objid)];
-	  print_expr (level + 1) expr
-      | `Dispatch (expr, typeid, objid, exprlst) ->
-	  out ~level [(0, match typeid with
-	  | None   -> "_dispatch"
-	  | Some v -> "_static_dispatch")];
-	  print_expr (level + 1) expr;
-	  (match typeid with
-	  | None   -> ()
-	  | Some v -> out ~level [(1, v)]);
-	  out ~level [(1, objid); (1, "(")];
-	  List.iter exprlst ~f:(print_expr (level + 1));
-	  out ~level [(1, ")")]
-      | `Cond (expr1, expr2, expr3) ->
-	  out ~level [(0, "_cond")];
-	  List.iter [expr1; expr2; expr3] ~f:(print_expr (level + 1))
-      | `Loop (expr1, expr2) ->
-	  out ~level [(0, "_loop")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Block exprlst ->
-	  out ~level [(0, "_block")];
-	  List.iter exprlst ~f:(print_expr (level + 1))
-      | `Let (objid, typeid, init, expr) ->
-	  out ~level [(0, "_let"); (1, objid); (1, typeid)];
-	  (match init with
-	  | None   ->
-	      out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")]
-	  | Some v -> print_expr (level + 1) v);
-	  print_expr (level + 1) expr
-      | `Case (expr, lst) ->
-	  out ~level [(0, "_typcase")];
-	  print_expr (level + 1) expr;
-	  List.iter lst ~f:(fun (objid, typeid, expr) ->
-	    out ~level [(1, "#1"); (1, "_branch"); (2, objid); (2, typeid)];
-	    print_expr (level + 2) expr)
-      | `New typeid ->
-	  out ~level [(0, "_new"); (1, typeid)]
-      | `Isvoid expr ->
-	  out ~level [(0, "_isvoid")];
-	  print_expr (level + 1) expr
-      | `Plus (expr1, expr2) ->
-	  out ~level [(0, "_plus")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Minus (expr1, expr2) ->
-	  out ~level [(0, "_sub")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Times (expr1, expr2) ->
-	  out ~level [(0, "_mul")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Div (expr1, expr2) ->
-	  out ~level [(0, "_divide")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Lt (expr1, expr2) ->
-	  out ~level [(0, "_lt")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Le (expr1, expr2) ->
-	  out ~level [(0, "_leq")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Eq (expr1, expr2) ->
-	  out ~level [(0, "_eq")];
-	  List.iter [expr1; expr2] ~f:(print_expr (level + 1))
-      | `Complmnt expr ->
-	  out ~level [(0, "_neg")];
-	  print_expr (level + 1) expr
-      | `Not expr ->
-	  out ~level [(0, "_comp")];
-	  print_expr (level + 1) expr
-      | `Paren _ -> ());
-      match expr with
-      | `Paren _ -> ()
-      | _ ->
-	  out ~level [(0, ": _no_type")]
+      print_expr level expr);
+  match expr with
+  | `Paren _ -> ()
+  | _ ->
+      out ~level [(0, ": _no_type")]
 
 let print_formal level (`Formal (objid, typeid)) =
-  out ~level [(0, "#1"); (0, "_formal"); (1, objid); (1, typeid)]
+  header level "_formal";
+  out ~level [(1, objid); (1, typeid)]
 
 let print_feature ~level = function
   | `Method (objid, formals, typeid, expr) ->
-      out ~level [(0, "#1"); (0, "_method"); (1, objid)];
-	List.iter formals ~f:(print_formal (level + 1));
+      header level "_method";
+      out ~level [(1, objid)];
+      List.iter formals ~f:(print_formal (level + 1));
       out ~level [(1, typeid)];
       print_expr (level + 1) expr
   | `Attr (objid, typeid, expr) ->
-      out ~level [(0, "#1"); (0, "_attr"); (1, objid); (1, typeid)];
+      header level "_attr";
+      out ~level [(1, objid); (1, typeid)];
       (match expr with
       | None ->
 	  out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")];
@@ -118,12 +132,12 @@ let print_feature ~level = function
 	  print_expr (level + 1) v)
 
 let print_class fname level (`Class (clsname, basename, features)) =
-  out ~level [(0, "#1"); (0, "_class"); (1, clsname); (1, basename);
-	      (1, "\"" ^ fname ^ "\""); (1, "(")];
+  header level "_class";
+  out ~level [(1, clsname); (1, basename); (1, "\"" ^ fname ^ "\""); (1, "(")];
   List.iter features ~f:(print_feature ~level:(level + 1));
   out ~level [(1, ")")]
 
 let () =
   let fname = Sys.argv.(1) in
-  out 0 [(0, "#1"); (0, "_program")];
+  header 0 "_program";
   List.iter (Cool.parse_exn fname) ~f:(print_class fname 1)
