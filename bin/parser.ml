@@ -105,7 +105,8 @@ let rec print_expr level expr =
       header "_comp";
       print_expr (level + 1) expr
   | `Paren expr ->
-      print_expr level expr);
+      print_expr level expr
+  | `InterExpr _ -> raise (SyntaxError "Parser finds internal expression."));
   match expr with
   | `Paren _ -> ()
   | _ ->

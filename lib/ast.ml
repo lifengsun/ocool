@@ -25,6 +25,7 @@ type expr = [
   | `Complmnt  of expr
   | `Not       of expr
   | `Paren     of expr			(* parenthesis *)
+  | `InterExpr of string		(* internal expression *)
   ]
 
 type formal = [

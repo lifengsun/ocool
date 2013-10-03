@@ -22,6 +22,7 @@ Library ocool
   Modules:            Cool,
                       Ast,
                       Inherit_tree,
+                      Basic_classes,
                       Lex,
                       Parse,
                       Semantics

@@ -18,9 +18,6 @@ let insert_children tree =
 let create_inherit_tree classes =
   let module Itree = Inherit_tree in
   let inherit_tree = Itree.create () in
-  Itree.insert inherit_tree "Object" ("", Itree.Children.empty);
-  List.iter ["IO"; "Int"; "String"; "Bool"] ~f:(fun c ->
-    Itree.insert inherit_tree c ("Object", Itree.Children.empty));
   List.iter classes ~f:(fun (`Class (name, parent, _)) ->
     match Itree.find inherit_tree ~name with
     | None ->
@@ -33,6 +30,7 @@ let create_inherit_tree classes =
 
 let semant classes =
   let module Itree = Inherit_tree in
-  let inherit_tree = create_inherit_tree classes in
-  insert_missing_children inherit_tree;
+  let inherit_tree = create_inherit_tree
+      (Basic_classes.basic_classes @ classes)
+  in
   Itree.print inherit_tree
