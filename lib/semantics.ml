@@ -28,7 +28,14 @@ let create_inherit_tree classes =
   insert_children inherit_tree;
   inherit_tree
 
+let check_main_class classes =
+  if not (List.exists classes ~f:(fun (`Class (name, _, _)) ->
+    name = "Main")) then
+    (eprintf "syntax error: Main class undefined.\n";
+     exit (-1))
+
 let semant classes =
+  check_main_class classes;
   let module Itree = Inherit_tree in
   let inherit_tree = create_inherit_tree
       (Basic_classes.basic_classes @ classes)
