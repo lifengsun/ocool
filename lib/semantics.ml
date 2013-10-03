@@ -1,5 +1,4 @@
 open Core.Std
-open Cool
 
 let insert_children tree =
   let module Itree = Inherit_tree in

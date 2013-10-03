@@ -26,6 +26,7 @@ Library ocool
                       Inherit_tree,
                       Basic_classes,
                       Method_env,
+                      Scopes,
                       Semantics
   BuildTools:         menhir
   BuildDepends:       core,
