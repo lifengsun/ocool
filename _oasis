@@ -21,10 +21,11 @@ Library ocool
   Pack:               true
   Modules:            Cool,
                       Ast,
-                      Inherit_tree,
-                      Basic_classes,
                       Lex,
                       Parse,
+                      Inherit_tree,
+                      Basic_classes,
+                      Method_env,
                       Semantics
   BuildTools:         menhir
   BuildDepends:       core,

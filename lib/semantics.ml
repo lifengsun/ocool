@@ -91,12 +91,37 @@ let check_acycle tree =
 	exit (-1)
       end)
 
+let create_method_environ classes =
+  let method_env = Method_env.create () in
+  List.iter classes ~f:(fun (`Class (clsname, _, features)) ->
+    List.iter features ~f:(fun feature ->
+      match feature with
+      | `Attr _ -> ()
+      | `Method (mthdname, formals, retn_type, _) ->
+	  let param_types =
+	    List.fold_right formals ~init:[] ~f:(fun (`Formal (_, x)) ls ->
+	      x :: ls)
+	  in
+	  Method_env.insert method_env ~name:(clsname, mthdname)
+	    ~signt:(param_types, retn_type)));
+  method_env
+
+let print_method_environ method_env =
+  printf "========= method environment begin =========\n";
+  Method_env.iter method_env ~f:(fun ~name:(clsname, mthdname)
+      ~signt:(param_types, retn_type) ->
+    printf "%s.%s( " clsname mthdname;
+    List.iter param_types ~f:(printf "%s ");
+    printf ") %s\n" retn_type);
+  printf "========== method environment end ==========\n"
+
 let semant classes =
-  let inherit_tree = create_inherit_tree
-      (Basic_classes.basic_classes @ classes)
-  in
+  let all_classes = Basic_classes.basic_classes @ classes in
+  let inherit_tree = create_inherit_tree all_classes in
   List.iter [check_main_class_defined;
 	     check_final_basis_classes;
 	     check_acycle]
     ~f:(fun check -> check inherit_tree);
-  Inherit_tree.print inherit_tree
+  let method_env = create_method_environ classes in
+  Inherit_tree.print inherit_tree;
+  print_method_environ method_env
