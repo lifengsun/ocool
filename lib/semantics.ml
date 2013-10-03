@@ -47,11 +47,43 @@ let check_final_basis_classes tree =
 	exit (-1)
       end)
 
+let check_acycle tree =
+  let module Itree = Inherit_tree in
+  let visited = String.Table.create () in
+  Itree.iter tree ~f:(fun ~name _ ->
+    Hashtbl.replace visited name false);
+  let rec traverse_from_root name =
+    Hashtbl.replace visited name true;
+    let _, children = Option.value_exn (Itree.find tree name) in
+    Itree.Children.iter children ~f:(fun c ->
+      traverse_from_root c)
+  in
+  let rec print_cycle curr target =
+    let `Class (_, parent, _), _ =
+      Option.value_exn (Itree.find tree curr)
+    in
+    if parent <> target then
+      begin
+	eprintf " %s ->" parent;
+	print_cycle parent target
+      end
+  in
+  traverse_from_root "Object";
+  Hashtbl.iter visited ~f:(fun ~key ~data ->
+    if not data then
+      begin
+	eprintf "syntax error: circular inheritance class (%s ->" key;
+	print_cycle key key;
+	eprintf " %s).\n" key;
+	exit (-1)
+      end)
+
 let semant classes =
   let inherit_tree = create_inherit_tree
       (Basic_classes.basic_classes @ classes)
   in
   List.iter [check_main_class_defined;
-	     check_final_basis_classes]
+	     check_final_basis_classes;
+	     check_acycle]
     ~f:(fun check -> check inherit_tree);
   Inherit_tree.print inherit_tree
