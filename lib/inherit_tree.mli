@@ -1,8 +1,9 @@
 module Children : sig
   type t
-  val empty : t
-  val add   : t -> string -> t
-  val iter  : t -> f:(string -> unit) -> unit
+  val empty    : t
+  val is_empty : t -> bool
+  val add      : t -> string -> t
+  val iter     : t -> f:(string -> unit) -> unit
 end
 
 type t

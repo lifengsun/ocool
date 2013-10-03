@@ -3,6 +3,7 @@ open Core.Std
 module Children = struct
   type t = String.Set.t
   let empty = String.Set.empty
+  let is_empty = String.Set.is_empty
   let add children child = String.Set.add children child
   let iter = String.Set.iter
 end

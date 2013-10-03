@@ -8,3 +8,6 @@ configure
 Makefile
 *.native
 *.byte
+META
+*.mlpack
+*.odocl
