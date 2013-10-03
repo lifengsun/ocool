@@ -44,3 +44,5 @@ type feature = [
 type cls = [
     `Class of typeid * typeid * feature list
   ]
+
+val print : string -> cls list -> unit

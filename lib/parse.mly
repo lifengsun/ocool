@@ -3,7 +3,6 @@
 (* open Core.Std *)
 open Lexing
 
-exception SyntaxError of string
 
 (* menhir generates code for Error exception which conflicts with the
    one in Core, so we redefine it to make menhir happy. *)
@@ -127,8 +126,8 @@ expr:
     { `Dispatch ($1, Some $3, $5, $7, ref None) }
 | expr; DOT; objid; LPAREN; args; RPAREN
     { `Dispatch ($1, None, $3, $5, ref None) }
-| o = objid; LPAREN; a = args; RPAREN
-    { `Dispatch (`Ident ("self", ref None), None, o, a, ref None) }
+| objid; LPAREN; args; RPAREN
+    { `Dispatch (`Ident ("self", ref None), None, $1, $3, ref None) }
 | IF; expr; THEN; expr; ELSE; expr; FI
     { `Cond ($2, $4, $6, ref None) }
 | WHILE; expr; LOOP; expr; POOL
