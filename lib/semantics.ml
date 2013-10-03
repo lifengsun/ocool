@@ -1,33 +1,38 @@
 open Core.Std
 open Cool
 
+let insert_children tree =
+  let module Itree = Inherit_tree in
+  Itree.iter tree ~f:(fun ~name (parent, _) ->
+    if name <> "Object" then	 (* Object class has no base class. *)
+      match Itree.find tree parent with
+      | None ->
+          eprintf
+	    "syntax error: class \"%s\" inherits from undefined class \"%s\".\n"
+	    name parent;
+          exit (-1)
+      | Some (pparent, pchildren) ->
+          Itree.insert tree parent
+	    (pparent, Itree.Children.add pchildren name))
+
 let create_inherit_tree classes =
-  let inherit_tree = Inherit_tree.create () in
-  Inherit_tree.insert inherit_tree "Object" "" Inherit_tree.Children.empty;
+  let module Itree = Inherit_tree in
+  let inherit_tree = Itree.create () in
+  Itree.insert inherit_tree "Object" ("", Itree.Children.empty);
   List.iter ["IO"; "Int"; "String"; "Bool"] ~f:(fun c ->
-    Inherit_tree.insert inherit_tree c "Object" Inherit_tree.Children.empty);
+    Itree.insert inherit_tree c ("Object", Itree.Children.empty));
   List.iter classes ~f:(fun (`Class (name, parent, _)) ->
-    match Inherit_tree.find inherit_tree ~name with
+    match Itree.find inherit_tree ~name with
     | None ->
-	Inherit_tree.insert inherit_tree name parent
-	  Inherit_tree.Children.empty
+	Itree.insert inherit_tree name (parent, Itree.Children.empty)
     | Some _ ->
 	eprintf "syntax error: class \"%s\" redefined\n" name;
 	exit (-1));
-  (* When a class is inserted later than its children, it cannot find
-     them directly, so we traverse all classes and insert them as
-     children. *)
-  Inherit_tree.iter inherit_tree ~f:(fun ~name (parent, _) ->
-    if name <> "Object" then	 (* Object class has no base class. *)
-      match Inherit_tree.find inherit_tree parent with
-      | None ->
-          eprintf "syntax error: class \"%s\" inherits from undefined class \"%s\".\n" name parent;
-          exit (-1)
-      | Some (pparent, pchildren) ->
-          Inherit_tree.insert inherit_tree ~name:parent ~parent:pparent
-	    ~children:(Inherit_tree.Children.add pchildren name));
+  insert_children inherit_tree;
   inherit_tree
 
 let semant classes =
+  let module Itree = Inherit_tree in
   let inherit_tree = create_inherit_tree classes in
-    Inherit_tree.print inherit_tree
+  insert_missing_children inherit_tree;
+  Itree.print inherit_tree

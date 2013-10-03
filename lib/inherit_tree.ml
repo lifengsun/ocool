@@ -18,13 +18,8 @@ let create () = Hashtbl.create ~hashable:String.hashable ()
 
 let find tree ~name = Hashtbl.find tree name
 
-let insert tree ~name ~parent ~children =
-  Hashtbl.replace tree ~key:name ~data:(parent, children);
-  match find tree parent with
-  | Some (pparent, pchildren) ->
-      Hashtbl.replace tree ~key:parent
-	~data:(pparent, Children.add pchildren name)
-  | None -> ()
+let insert tree ~name ~node:(parent, children) =
+  Hashtbl.replace tree ~key:name ~data:(parent, children)
 
 let iter tree ~f =
   let g ~key:name ~data:(parent, children) = f ~name (parent, children) in

@@ -13,6 +13,6 @@ type node   = parent * Children.t
 
 val create : unit -> t
 val find   : t -> name:name -> node option
-val insert : t -> name:name -> parent:parent -> children:Children.t -> unit
+val insert : t -> name:name -> node:node -> unit
 val iter   : t -> f:(name:name -> node -> unit) -> unit
 val print  : t -> unit
