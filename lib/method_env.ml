@@ -22,3 +22,27 @@ let iter table ~f =
     f ~name:(clsname, mthdname) ~signt:(param_types, retn_type)
   in
   Hashtbl.iter table ~f:g
+
+let build classes =
+  let env = create () in
+  List.iter classes ~f:(fun (`Class (clsname, _, features)) ->
+    List.iter features ~f:(fun feature ->
+      match feature with
+      | `Attr _ -> ()
+      | `Method (mthdname, formals, retn_type, _) ->
+	  let param_types =
+	    List.fold_right formals ~init:[] ~f:(fun (`Formal (_, x)) ls ->
+	      x :: ls)
+	  in
+	  insert env ~name:(clsname, mthdname)
+	    ~signt:(param_types, retn_type)));
+  env
+
+let print env =
+  printf "========= method environment begin =========\n";
+  iter env ~f:(fun ~name:(clsname, mthdname)
+      ~signt:(param_types, retn_type) ->
+    printf "%s.%s( " clsname mthdname;
+    List.iter param_types ~f:(printf "%s ");
+    printf ") %s\n" retn_type);
+  printf "========== method environment end ==========\n"
