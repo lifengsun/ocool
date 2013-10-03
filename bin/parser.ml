@@ -3,4 +3,4 @@ open Ocool
 
 let () =
   let fname = Sys.argv.(1) in
-  Ast.print fname (Cool.parse_exn fname)
+  Cool.parse_exn fname |> Ast.print fname
