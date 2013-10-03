@@ -122,38 +122,39 @@ rev_cases:
 
 expr:
 | objid; ASSIGN; expr
-    { `Assign ($1, $3) }
+    { `Assign ($1, $3, ref None) }
 | expr; AT; typeid; DOT; objid; LPAREN; args; RPAREN
-    { `Dispatch ($1, Some $3, $5, $7) }
+    { `Dispatch ($1, Some $3, $5, $7, ref None) }
 | expr; DOT; objid; LPAREN; args; RPAREN
-    { `Dispatch ($1, None, $3, $5) }
-| objid; LPAREN; args; RPAREN
-    { `Dispatch (`Ident "self", None, $1, $3) }
+    { `Dispatch ($1, None, $3, $5, ref None) }
+| o = objid; LPAREN; a = args; RPAREN
+    { `Dispatch (`Ident ("self", ref None), None, o, a, ref None) }
 | IF; expr; THEN; expr; ELSE; expr; FI
-    { `Cond ($2, $4, $6) }
+    { `Cond ($2, $4, $6, ref None) }
 | WHILE; expr; LOOP; expr; POOL
-    { `Loop ($2, $4) }
+    { `Loop ($2, $4, ref None) }
 | LBRACE; e = expr; SEMICOLON; es = exprs; RBRACE
-    { `Block (e :: es) }
+    { `Block (e :: es, ref None) }
 | LET; objinits; IN; expr
     { List.fold_right
-	(fun (objid, typeid, ex) y -> `Let (objid, typeid, ex, y)) $2 $4 }
+	(fun (objid, typeid, ex) y ->
+	  `Let (objid, typeid, ex, y, ref None)) $2 $4 }
 | CASE; e = expr; OF; c = case; SEMICOLON; cs = cases; ESAC
-    { `Case (e, c :: cs) }
-| expr; PLUS;  expr { `Plus ($1, $3) }
-| expr; MINUS; expr { `Minus ($1, $3) }
-| expr; TIMES; expr { `Times ($1, $3) }
-| expr; DIV;   expr { `Div ($1, $3) }
-| expr; LT;    expr { `Lt ($1, $3) }
-| expr; LE;    expr { `Le ($1, $3) }
-| expr; EQ;    expr { `Eq ($1, $3) }
-| NEW;      typeid { `New $2 }
-| ISVOID;   expr   { `Isvoid $2 }
-| COMPLMNT; expr   { `Complmnt $2 }
-| NOT;      expr   { `Not $2 }
+    { `Case (e, c :: cs, ref None) }
+| expr; PLUS;  expr { `Plus ($1, $3, ref None) }
+| expr; MINUS; expr { `Minus ($1, $3, ref None) }
+| expr; TIMES; expr { `Times ($1, $3, ref None) }
+| expr; DIV;   expr { `Div ($1, $3, ref None) }
+| expr; LT;    expr { `Lt ($1, $3, ref None) }
+| expr; LE;    expr { `Le ($1, $3, ref None) }
+| expr; EQ;    expr { `Eq ($1, $3, ref None) }
+| NEW;      typeid { `New ($2, ref None) }
+| ISVOID;   expr   { `Isvoid ($2, ref None) }
+| COMPLMNT; expr   { `Complmnt ($2, ref None) }
+| NOT;      expr   { `Not ($2, ref None) }
 | LPAREN; expr; RPAREN { `Paren $2 }
-| OBJECTID { `Ident $1 }
-| INT      { `Int $1 }
-| STRING   { `String $1 }
-| TRUE     { `Bool true }
-| FALSE    { `Bool false }
+| OBJECTID { `Ident ($1, ref None) }
+| INT      { `Int ($1, ref None) }
+| STRING   { `String ($1, ref None) }
+| TRUE     { `Bool (true, ref None) }
+| FALSE    { `Bool (false, ref None) }

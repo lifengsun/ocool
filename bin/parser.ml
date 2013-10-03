@@ -19,24 +19,35 @@ let rec print_expr level expr =
   let print_exprs level exprs =
     List.iter exprs ~f:(print_expr level)
   in
-  (match expr with
-  | `Bool v ->
+  let print_type level t = match !t with
+  | None ->
+      out ~level [(0, ": _no_type")]
+  | Some t ->
+      out ~level [(0, ": " ^ t)]
+  in
+  match expr with
+  | `Bool (v, t) ->
       header "_bool";
-      out level [(1, if v then "1" else "0")]
-  | `Int v ->
+      out level [(1, if v then "1" else "0")];
+      print_type level t
+  | `Int (v, t) ->
       header "_int";
-      out ~level [(1, Int.to_string v)]
-  | `String s ->
+      out ~level [(1, Int.to_string v)];
+      print_type level t
+  | `String (s, t) ->
       header "_string";
-      out ~level [(1, "\"" ^ s ^ "\"")]
-  | `Ident id ->
+      out ~level [(1, "\"" ^ s ^ "\"")];
+      print_type level t
+  | `Ident (id, t) ->
       header "_object";
-      out ~level [(1, id)]
-  | `Assign (objid, expr) ->
+      out ~level [(1, id)];
+      print_type level t
+  | `Assign (objid, expr, t) ->
       header "_assign";
       out ~level [(1, objid)];
-      print_expr (level + 1) expr
-  | `Dispatch (expr, typeid, objid, exprlst) ->
+      print_expr (level + 1) expr;
+      print_type level t
+  | `Dispatch (expr, typeid, objid, exprlst, t) ->
       (match typeid with
       | None   ->
 	  header "_dispatch";
@@ -47,70 +58,85 @@ let rec print_expr level expr =
 	  out ~level [(1, v)]);
       out ~level [(1, objid); (1, "(")];
       print_exprs (level + 1) exprlst;
-      out ~level [(1, ")")]
-  | `Cond (expr1, expr2, expr3) ->
+      out ~level [(1, ")")];
+      print_type level t
+  | `Cond (expr1, expr2, expr3, t) ->
       header "_cond";
-      print_exprs (level + 1) [expr1; expr2; expr3]
-  | `Loop (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2; expr3];
+      print_type level t
+  | `Loop (expr1, expr2, t) ->
       header "_loop";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Block exprlst ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Block (exprlst, t) ->
       header "_block";
-      print_exprs (level + 1) exprlst
-  | `Let (objid, typeid, init, expr) ->
+      print_exprs (level + 1) exprlst;
+      print_type level t
+  | `Let (objid, typeid, init, expr, t) ->
       header "_let";
       out ~level [(1, objid); (1, typeid)];
-      (match init with
-      | None   ->
-	  out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")]
-      | Some v -> print_expr (level + 1) v);
-      print_expr (level + 1) expr
-  | `Case (expr, lst) ->
+      print_expr_option (level + 1) init;
+      print_expr (level + 1) expr;
+      print_type level t
+  | `Case (expr, lst, t) ->
       header "_typcase";
       print_expr (level + 1) expr;
       List.iter lst ~f:(fun (objid, typeid, expr) ->
 	out ~level [(1, "#1"); (1, "_branch"); (2, objid); (2, typeid)];
-	print_expr (level + 2) expr)
-  | `New typeid ->
+	print_expr (level + 2) expr);
+      print_type level t
+  | `New (typeid, t) ->
       header "_new";
-      out ~level [(1, typeid)]
-  | `Isvoid expr ->
+      out ~level [(1, typeid)];
+      print_type level t
+  | `Isvoid (expr, t) ->
       header "_isvoid";
-      print_expr (level + 1) expr
-  | `Plus (expr1, expr2) ->
+      print_expr (level + 1) expr;
+      print_type level t
+  | `Plus (expr1, expr2, t) ->
       header "_plus";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Minus (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Minus (expr1, expr2, t) ->
       header "_sub";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Times (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Times (expr1, expr2, t) ->
       header "_mul";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Div (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Div (expr1, expr2, t) ->
       header "_divide";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Lt (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Lt (expr1, expr2, t) ->
       header "_lt";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Le (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Le (expr1, expr2, t) ->
       header "_leq";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Eq (expr1, expr2) ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Eq (expr1, expr2, t) ->
       header "_eq";
-      print_exprs (level + 1) [expr1; expr2]
-  | `Complmnt expr ->
+      print_exprs (level + 1) [expr1; expr2];
+      print_type level t
+  | `Complmnt (expr, t) ->
       header "_neg";
-      print_expr (level + 1) expr
-  | `Not expr ->
+      print_expr (level + 1) expr;
+      print_type level t
+  | `Not (expr, t) ->
       header "_comp";
-      print_expr (level + 1) expr
+      print_expr (level + 1) expr;
+      print_type level t
   | `Paren expr ->
       print_expr level expr
-  | `InterExpr _ -> raise (SyntaxError "Parser finds internal expression."));
-  match expr with
-  | `Paren _ -> ()
-  | _ ->
-      out ~level [(0, ": _no_type")]
+  | `InterExpr _ -> raise (SyntaxError "Parser finds internal expression.")
+and print_expr_option level = function
+  | None ->
+      out ~level [(0, "#1"); (0, "_no_expr"); (0, ": _no_type")];
+  | Some v ->
+      print_expr level v
 
 let print_formal level (`Formal (objid, typeid)) =
   header level "_formal";
@@ -126,11 +152,7 @@ let print_feature ~level = function
   | `Attr (objid, typeid, expr) ->
       header level "_attr";
       out ~level [(1, objid); (1, typeid)];
-      (match expr with
-      | None ->
-	  out ~level [(1, "#1"); (1, "_no_expr"); (1, ": _no_type")];
-      | Some v -> 
-	  print_expr (level + 1) v)
+      print_expr_option (level + 1) expr
 
 let print_class fname level (`Class (clsname, basename, features)) =
   header level "_class";
