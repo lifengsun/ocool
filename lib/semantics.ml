@@ -72,7 +72,7 @@ let check_acycle tree =
   Hashtbl.iter visited ~f:(fun ~key ~data ->
     if not data then
       begin
-	eprintf "syntax error: circular inheritance class (%s ->" key;
+	eprintf "syntax error: circular inheritance classes (%s ->" key;
 	print_cycle key key;
 	eprintf " %s).\n" key;
 	exit (-1)
