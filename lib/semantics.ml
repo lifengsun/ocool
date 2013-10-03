@@ -29,11 +29,27 @@ let create_inherit_tree classes =
   inherit_tree
 
 let check_main_class_defined tree =
+  let check_main_method features =
+    if not (List.exists features ~f:(function
+      | `Method (objid, formals, _, _) ->
+	  if objid = "main" && formals <> [] then
+	    begin
+	      eprintf "syntax error: main method in Main class has formals.\n";
+	      exit (-1)
+	    end;
+	  objid = "main"
+      | `Attr _ -> false)) then
+      begin
+	eprintf "syntax error: main method in Main class undefined.\n";
+	exit (-1)
+      end
+  in
   match Inherit_tree.find tree "Main" with
   | None ->
       eprintf "syntax error: Main class undefined.\n";
       exit (-1)
-  | Some _ -> ()
+  | Some (`Class (_, _, features), _)  ->
+      check_main_method features
 
 let check_final_basis_classes tree =
   let module Itree = Inherit_tree in
