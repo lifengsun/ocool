@@ -9,26 +9,26 @@ module Children = struct
 end
 
 type name = String.t
-type child = String.t
-type parent = String.t
-type node = parent * Children.t
+type node = Ast.cls * Children.t
 
-type t = (parent, node) Hashtbl.t
+type t = (name, node) Hashtbl.t
 
 let create () = Hashtbl.create ~hashable:String.hashable ()
 
 let find tree ~name = Hashtbl.find tree name
 
-let insert tree ~name ~node:(parent, children) =
-  Hashtbl.replace tree ~key:name ~data:(parent, children)
+let insert tree ~name ~node:(cls, children) =
+  Hashtbl.replace tree ~key:name ~data:(cls, children)
 
 let iter tree ~f =
-  let g ~key:name ~data:(parent, children) = f ~name (parent, children) in
+  let g ~key:name ~data:(cls, children) =
+    f ~name (cls, children)
+  in
   Hashtbl.iter tree ~f:g
 
 let print tree =
   printf "========= inherit tree begin =========\n";
-  iter tree ~f:(fun ~name (parent, children) ->
+  iter tree ~f:(fun ~name (`Class (_, parent, _), children) ->
     printf "(\"%s\", \"%s\") " name parent;
     Children.iter children ~f:(printf "\"%s\" ");
     printf "\n");

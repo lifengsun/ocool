@@ -7,10 +7,8 @@ module Children : sig
 end
 
 type t
-type name   = string
-type parent = string
-type child  = string
-type node   = parent * Children.t
+type name = string
+type node = Ast.cls * Children.t
 
 val create : unit -> t
 val find   : t -> name:name -> node option
