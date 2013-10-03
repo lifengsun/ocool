@@ -21,6 +21,7 @@ Library ocool
   Pack:               true
   Modules:            Cool,
                       Ast,
+                      Inherit_tree,
                       Lex,
                       Parse,
                       Semantics
