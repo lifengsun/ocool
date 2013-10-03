@@ -4,7 +4,7 @@ module Children = struct
   type t = String.Set.t
   let empty = String.Set.empty
   let is_empty = String.Set.is_empty
-  let add children child = String.Set.add children child
+  let add = String.Set.add
   let iter = String.Set.iter
 end
 
@@ -16,6 +16,8 @@ type t = (name, node) Hashtbl.t
 let create () = Hashtbl.create ~hashable:String.hashable ()
 
 let find tree ~name = Hashtbl.find tree name
+
+let change tree ~name ~f = Hashtbl.change tree name f
 
 let insert tree ~name ~node:(cls, children) =
   Hashtbl.replace tree ~key:name ~data:(cls, children)

@@ -5,15 +5,12 @@ let insert_children tree =
   let module Itree = Inherit_tree in
   Itree.iter tree ~f:(fun ~name (`Class (_, parent, _), _) ->
     if name <> "Object" then	 (* Object class has no base class. *)
-      match Itree.find tree parent with
+      Itree.change tree ~name:parent ~f:(fun v -> match v with
       | None ->
-          eprintf
-	    "syntax error: class \"%s\" inherits from undefined class \"%s\".\n"
-	    name parent;
+          eprintf "syntax error: class \"%s\" inherits from undefined class \"%s\".\n" name parent;
           exit (-1)
       | Some (pcls, pchildren) ->
-          Itree.insert tree parent
-	    (pcls, Itree.Children.add pchildren name))
+	  Some (pcls, Itree.Children.add pchildren name)))
 
 let create_inherit_tree classes =
   let module Itree = Inherit_tree in
