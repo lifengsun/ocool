@@ -49,7 +49,7 @@ type cls = [
 
 exception SyntaxError of string
 
-let rec type_of = function
+let rec type_of_expr = function
   | `Bool (_, t)              -> t
   | `Int (_, t)               -> t
   | `String (_, t)            -> t
@@ -72,7 +72,7 @@ let rec type_of = function
   | `Eq (_, _, t)             -> t
   | `Complmnt (_, t)          -> t
   | `Not (_, t)               -> t
-  | `Paren expr               -> type_of expr
+  | `Paren expr               -> type_of_expr expr
   | `InterExpr _              -> ref None
 
 let out ~level ls =
@@ -180,7 +180,7 @@ let rec print_expr level expr =
   match expr with
   | `Paren _ -> ()
   | _ ->
-      match !(type_of expr) with
+      match !(type_of_expr expr) with
       | None ->
 	  out ~level [(0, ": _no_type")]
       | Some typeid ->

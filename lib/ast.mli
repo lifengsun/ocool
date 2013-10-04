@@ -45,4 +45,6 @@ type cls = [
     `Class of typeid * typeid * feature list
   ]
 
-val print : string -> cls list -> unit
+val type_of_expr : expr -> typeid option ref
+val print_expr   : int -> expr -> unit
+val print        : string -> cls list -> unit

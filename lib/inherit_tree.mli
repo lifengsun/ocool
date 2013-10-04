@@ -14,6 +14,7 @@ type node = cls * Children.t
 
 val create : unit -> t
 val find   : t -> name:name -> node option
+val parent : t -> name:name -> name option
 val change : t -> name:name -> f:(node option -> node option) -> unit
 val insert : t -> name:name -> node:node -> unit
 val iter   : t -> f:(name:name -> node -> unit) -> unit

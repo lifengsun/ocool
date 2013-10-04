@@ -17,6 +17,12 @@ let create () = Hashtbl.create ~hashable:String.hashable ()
 
 let find tree ~name = Hashtbl.find tree name
 
+let parent tree ~name =
+  match find tree ~name with
+  | None -> None
+  | Some (`Class (_, parent, _), _) ->
+      Some parent
+
 let change tree ~name ~f = Hashtbl.change tree name f
 
 let insert tree ~name ~node:(cls, children) =

@@ -27,10 +27,12 @@ let add scopes (objid, typeid) =
 
 let find scopes ~objid =
   let ans = ref None in
-  ignore (List.find !scopes ~f:(fun scope ->
+  if List.exists !scopes ~f:(fun scope ->
     match Scope.find scope objid with
-    | Some v ->
-	ans := Some v;
+    | Some _ as a ->
+	ans := a;
 	true
-    | None -> false));
-  !ans
+    | None -> false) then
+    Some !ans
+  else
+    None
