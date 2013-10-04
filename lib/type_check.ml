@@ -76,7 +76,8 @@ let rec do_expr = function
   | `Ident (id, t) ->
       (match Scopes.find !scopes id with
       | None ->
-	  eprintf "identifier (%s) not declared.\n" id
+	  eprintf "identifier (%s) not declared.\n" id;
+	  t := Some "Object"
       | Some tid ->
 	  t := tid)
   | `Assign (objid, expr, t) ->
@@ -84,22 +85,23 @@ let rec do_expr = function
       (match Scopes.find !scopes objid with
 	| None ->
 	    eprintf "identifier (%s) not declared.\n" objid;
-	    t := None
+	    t := Some "Object"
 	| Some None ->
 	    eprintf "cannot determine type of (%s).\n" objid;
-	    t := None
+	    t := Some "Object"
 	| Some (Some typeid) ->
 	    (match type_of_expr expr with
 	      | None ->
 		  eprintf "cannot determine type of init expression in assignment.\n";
-		  t := None
+		  t := Some "Object"
 	      | Some typeid' ->
 		  if is_comform typeid' typeid then
 		    t := Some typeid'
 		  else
-		    (t := None;
-		     eprintf "(%s) not comform (%s).\n" typeid' typeid)))
-  | `Dispatch (expr, typeid, objid, exprlst, t) ->
+		    (eprintf "(%s) not comform (%s).\n" typeid' typeid;
+		     t := Some "Object")))
+(*TODO: combine two Dispatches.*)
+  | `Dispatch (expr, None, objid, exprlst, tn1) ->
       do_expr expr;
       List.iter exprlst ~f:do_expr;
       if is_legal_type (type_of_expr expr) then
@@ -107,25 +109,55 @@ let rec do_expr = function
 	(match Method_env.find !mthdenv !itree
 	    ~name:((if t0 <> "SELF_TYPE" then t0 else !clsname), objid) with
 	| Some (params, ret) ->
-	    (* FIXME: check comforms. *)
-	    if ret <> "SELF_TYPE" then
-	      t := Some ret
+	    if List.length params <> List.length exprlst then
+	      eprintf "argument parameter length not match.\n"
 	    else
-	      t := Some t0
+	      if List.exists2_exn exprlst params ~f:(fun e ti' ->
+		let ti = Option.value_exn (type_of_expr e) in (*FIXME*)
+		not (is_comform ti ti')) then
+		eprintf "argument types not comform.\n";
+	    if ret <> "SELF_TYPE" then
+	      tn1 := Some ret
+	    else
+	      tn1 := Some t0
 	| None ->
-	    eprintf "illegal method %s (%s.%s).\n" t0 !clsname objid;
-	    t := None)
+	    eprintf "method (%s.%s) undefined.\n" !clsname objid;
+	    tn1 := Some "Object")
+  | `Dispatch (expr, Some t, objid, exprlst, tn1) ->
+      do_expr expr;
+      List.iter exprlst ~f:do_expr;
+      if is_legal_type (type_of_expr expr) && is_legal_type (Some t) then
+	let t0 = Option.value_exn (type_of_expr expr) in
+	if not (is_comform t0 t) then
+	  eprintf "type (%s) not comform (%s).\n" t0 t;
+	(match Method_env.find !mthdenv !itree
+	    ~name:((if t <> "SELF_TYPE" then t else !clsname), objid) with
+	| Some (params, ret) ->
+	    if List.length params <> List.length exprlst then
+	      eprintf "argument parameter length not match.\n"
+	    else
+	      if List.exists2_exn exprlst params ~f:(fun e ti' ->
+		let ti = Option.value_exn (type_of_expr e) in (*FIXME*)
+		not (is_comform ti ti')) then
+		eprintf "argument types not comform.\n";
+	    if ret <> "SELF_TYPE" then
+	      tn1 := Some ret
+	    else
+	      tn1 := Some t0
+	| None ->
+	    eprintf "method (%s.%s) undefined.\n" !clsname objid;
+	    tn1 := Some "Object")
   | `Cond (expr1, expr2, expr3, t) ->
       List.iter [expr1; expr2; expr3]
 	~f:do_expr;
-      if (type_of_expr expr1) <> Some "Bool" then
+      if type_of_expr expr1 <> Some "Bool" then
 	eprintf "conditional expression in (if then else fi) is not Bool.\n";
-      let t2, t3 = ((type_of_expr expr2), (type_of_expr expr3)) in
+      let t2, t3 = type_of_expr expr2, type_of_expr expr3 in
       if is_legal_type t2 && is_legal_type t3 then
 	t := Some (lub (Option.value_exn t2) (Option.value_exn t3))
       else
 	(eprintf "cannot determine types of conditional branches.\n";
-	 t := None)		(* FIXME *)
+	 t := Some "Object")
   | `Loop (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:do_expr;
       if type_of_expr expr1 <> Some "Bool" then
@@ -143,15 +175,17 @@ let rec do_expr = function
 	  Scopes.add !scopes (objid, typeid)
       | Some e ->
 	  do_expr e;
-	  (if is_legal_type (Some typeid)
+	  if is_legal_type (Some typeid)
 	      && is_legal_type (type_of_expr e) then
 	    let t' = Option.value_exn (type_of_expr e) in
-	    if not (is_comform t' typeid) then
-	      eprintf "(%s) not comform to (%s).\n" t' typeid;
-	    Scopes.add !scopes (objid, typeid)
+	    if is_comform t' typeid then
+	       Scopes.add !scopes (objid, typeid)
+	    else
+	      (eprintf "(%s) not comform to (%s).\n" t' typeid;
+	       Scopes.add !scopes (objid, "Object"));
 	  else
-	    eprintf "illegal types (%s) or (%s).\n" typeid typeid);
-	  Scopes.add !scopes (objid, typeid));
+	    (eprintf "illegal types ( %s ) in LET bindings.\n" typeid;
+	     Scopes.add !scopes (objid, "Object")));
       do_expr expr;
       Scopes.exit_curr !scopes;
       t := type_of_expr expr
@@ -213,11 +247,11 @@ let rec do_expr = function
   | `Eq (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:do_expr;
       let t1, t2 = type_of_expr expr1, type_of_expr expr2 in
-      if is_legal_type t1 && is_legal_type t2
-	  && List.exists [t1; t2] ~f:(fun e ->
+      if is_legal_type t1 && is_legal_type t2 && List.exists [t1; t2]
+	  ~f:(fun e ->
 	    List.mem ["Int"; "String"; "Bool"] (Option.value_exn e))
 	  && t1 <> t2 then
-          eprintf "operand of (=) in (Int, String, Bool) with different types.\n";
+        eprintf "operand of (=) in (Int, String, Bool) with different types.\n";
       t := Some "Bool"
   | `Complmnt (expr, t) ->
       do_expr expr;
@@ -264,8 +298,7 @@ let rec insert_attr clsname =
 let do_class (`Class (cls, parent, features)) =
   clsname := cls;
   insert_attr !clsname;
-  List.iter features ~f:do_feature;
-  Scopes.exit_curr !scopes
+  List.iter features ~f:do_feature
 
 let run classes inherit_tree method_env =
   itree   := inherit_tree;
