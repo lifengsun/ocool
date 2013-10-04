@@ -3,7 +3,7 @@ open Core.Std
 open Ast
 
 let clsname = ref ""
-let scopes  = Scopes.create ()
+let scopes  = ref (Scopes.create ())
 let mthdenv = ref (Method_env.create ())
 let itree   = ref (Inherit_tree.create ())
 
@@ -74,14 +74,14 @@ let rec do_expr = function
   | `Ident ("self", t) ->
       t := Some "SELF_TYPE"
   | `Ident (id, t) ->
-      (match Scopes.find scopes id with
+      (match Scopes.find !scopes id with
       | None ->
 	  eprintf "identifier (%s) not declared.\n" id
       | Some tid ->
 	  t := tid)
   | `Assign (objid, expr, t) ->
       do_expr expr;
-      (match Scopes.find scopes objid with
+      (match Scopes.find !scopes objid with
 	| None ->
 	    eprintf "identifier (%s) not declared.\n" objid;
 	    t := None
@@ -137,10 +137,10 @@ let rec do_expr = function
       List.iter exprlst ~f:do_expr;
       t := type_of_expr (List.last_exn exprlst)
   | `Let (objid, typeid, init, expr, t) ->
-      Scopes.enter_new scopes;
+      Scopes.enter_new !scopes;
       (match init with
       | None ->
-	  Scopes.add scopes (objid, typeid)
+	  Scopes.add !scopes (objid, typeid)
       | Some e ->
 	  do_expr e;
 	  (if is_legal_type (Some typeid)
@@ -148,20 +148,20 @@ let rec do_expr = function
 	    let t' = Option.value_exn (type_of_expr e) in
 	    if not (is_comform t' typeid) then
 	      eprintf "(%s) not comform to (%s).\n" t' typeid;
-	    Scopes.add scopes (objid, typeid)
+	    Scopes.add !scopes (objid, typeid)
 	  else
 	    eprintf "illegal types (%s) or (%s).\n" typeid typeid);
-	  Scopes.add scopes (objid, typeid));
+	  Scopes.add !scopes (objid, typeid));
       do_expr expr;
-      Scopes.exit_curr scopes;
+      Scopes.exit_curr !scopes;
       t := type_of_expr expr
   | `Case (expr, lst, t) ->
       do_expr expr;
       List.iter lst ~f:(fun (objid, typeid, e) ->
-	Scopes.enter_new scopes;
-	Scopes.add scopes (objid, typeid);
+	Scopes.enter_new !scopes;
+	Scopes.add !scopes (objid, typeid);
 	do_expr e;
-	Scopes.exit_curr scopes);
+	Scopes.exit_curr !scopes);
       let t1 =
 	let _, _, e = List.hd_exn lst in
 	type_of_expr e
@@ -190,7 +190,7 @@ let rec do_expr = function
       List.iter [expr1; expr2] ~f:do_expr;
       if type_of_expr expr1 <> Some "Int"
 	  or type_of_expr expr2 <> Some "Int" then
-	eprintf "operand of (*) is not Int.\n";
+	eprintf "operand of ( * ) is not Int.\n";
       t := Some "Int"
   | `Div (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:do_expr;
@@ -234,7 +234,7 @@ let rec do_expr = function
   | `InterExpr _ -> ()
 
 let do_formal (`Formal (objid, typeid)) =
-  Scopes.add scopes (objid, typeid)
+  Scopes.add !scopes (objid, typeid)
 
 let do_feature = function
   | `Attr (_, _, None) ->
@@ -242,26 +242,33 @@ let do_feature = function
   | `Attr (_, _, Some e) ->
       do_expr e
   | `Method (_, formals, _, expr) ->
-      Scopes.enter_new scopes;
+      Scopes.enter_new !scopes;
       List.iter formals ~f:do_formal;
       do_expr expr;
-      Scopes.exit_curr scopes
+      Scopes.exit_curr !scopes
+
+let rec insert_attr clsname =
+  if clsname <> "Object" then
+    insert_attr
+      (Option.value_exn (Inherit_tree.parent !itree ~name:clsname));
+  let `Class (_, _ , features), _ =
+    Option.value_exn (Inherit_tree.find !itree ~name:clsname)
+  in
+  Scopes.enter_new !scopes;
+  List.iter features ~f:(fun feature ->
+    match feature with
+    | `Attr (objid, typeid, _) ->
+        Scopes.add !scopes (objid, typeid)
+    | `Method _ -> ())
 
 let do_class (`Class (cls, parent, features)) =
-  let insert_attr features =
-    List.iter features ~f:(fun feature ->
-      match feature with
-      | `Attr (objid, typeid, _) ->
-          Scopes.add scopes (objid, typeid)
-      | `Method _ -> ())
-  in
   clsname := cls;
-  Scopes.enter_new scopes;
-  insert_attr features;
+  insert_attr !clsname;
   List.iter features ~f:do_feature;
-  Scopes.exit_curr scopes
+  Scopes.exit_curr !scopes
 
 let run classes inherit_tree method_env =
   itree   := inherit_tree;
   mthdenv := method_env;
+  scopes  := Scopes.create ();
   List.iter classes ~f:do_class
