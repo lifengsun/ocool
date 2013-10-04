@@ -110,12 +110,23 @@ let rec do_expr ~scopes ~itree ~mthdenv = function
       List.iter exprlst ~f:(do_expr ~scopes ~itree ~mthdenv);
       t := !(type_of_expr (List.last_exn exprlst))
   | `Let (objid, typeid, init, expr, t) ->
-      (match init with
-      | None -> ()
-      | Some e -> do_expr ~scopes ~itree ~mthdenv e);
-      (* FIXME: check comform *)
       Scopes.enter_new scopes;
-      Scopes.add scopes (objid, typeid);
+      (match init with
+      | None ->
+	  Scopes.add scopes (objid, typeid)
+      | Some e ->
+	  do_expr ~scopes ~itree ~mthdenv e;
+	  if is_legal_type ~itree (Some typeid)
+	      && is_legal_type ~itree !(type_of_expr e) then
+	    let t' = Option.value_exn !(type_of_expr e) in
+	    if is_comform ~itree t' typeid then
+	      Scopes.add scopes (objid, t')
+	    else
+	      (eprintf "(%s) not comform to (%s).\n" t' typeid;
+	       Scopes.add scopes (objid, typeid)) (*FIXME*)
+	  else
+	    (eprintf "illegal types (%s) or (%s).\n" typeid typeid;
+	     Scopes.add scopes (objid, typeid))); (*FIXME*)
       do_expr ~scopes ~itree ~mthdenv expr;
       Scopes.exit_curr scopes;
       t := !(type_of_expr expr)
