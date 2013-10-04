@@ -5,7 +5,7 @@ open Ast
 (* is t1 <= t2 *)
 let rec is_comform ~itree t1 t2 =
   if t1 = t2 || (t1 = "Object" && t2 <> "Object") then
-    false
+    true
   else
     is_comform ~itree
       (Option.value_exn (Inherit_tree.parent itree ~name:t1)) t2
@@ -71,12 +71,12 @@ let rec do_expr ~scopes ~itree ~mthdenv = function
 	    eprintf "identifier (%s) not declared.\n" objid;
 	    t := None
 	| Some None ->
-	    eprintf "cannot determine type of (%s) not declared.\n" objid;
+	    eprintf "cannot determine type of (%s).\n" objid;
 	    t := None
 	| Some (Some typeid) ->
 	    (match !(type_of_expr expr) with
 	      | None ->
-		  eprintf "cannot determine type of sub-expression.\n";
+		  eprintf "cannot determine type of init expression in assignment.\n";
 		  t := None
 	      | Some typeid' ->
 		  if is_comform ~itree typeid' typeid then
@@ -86,34 +86,47 @@ let rec do_expr ~scopes ~itree ~mthdenv = function
 		     eprintf "(%s) not comform (%s).\n" typeid' typeid)))
   | `Dispatch (expr, typeid, objid, exprlst, t) ->
       do_expr ~scopes ~itree ~mthdenv expr;
-      List.iter exprlst ~f:(do_expr ~scopes ~itree ~mthdenv)
+      List.iter exprlst ~f:(do_expr ~scopes ~itree ~mthdenv);
+      t := Some "Bool"			(*FIXME*)
   | `Cond (expr1, expr2, expr3, t) ->
       List.iter [expr1; expr2; expr3]
 	~f:(do_expr ~scopes ~itree ~mthdenv);
       if !(type_of_expr expr1) <> Some "Bool" then
-	eprintf "conditional expression is not Bool.\n";
-      if is_legal_type ~itree !(type_of_expr expr2)
-	  && is_legal_type ~itree !(type_of_expr expr3) then
-	()
-      (* t := Some (lub ~itree *)
-      (* 		   (Option.value_exn !(type_of_expr expr2)) *)
-      (* 		   (Option.value_exn !(type_of_expr expr3))) *)
+	eprintf "conditional expression in (if then else fi) is not Bool.\n";
+      let t2, t3 = (!(type_of_expr expr2), !(type_of_expr expr3)) in
+      if is_legal_type ~itree t2 && is_legal_type ~itree t3 then
+	t := Some (lub ~itree (Option.value_exn t2) (Option.value_exn t3))
+      else
+	(eprintf "cannot determine types of conditional branches.\n";
+	 t := None)		(* FIXME *)
   | `Loop (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Bool" then
+	eprintf "conditional expression in (while loop pool) is not Bool.\n";
+      if !(type_of_expr expr2) = None then
+	eprintf "cannot determine type of loop body.\n";
       t := Some "Object"
   | `Block (exprlst, t) ->
-      List.iter exprlst ~f:(do_expr ~scopes ~itree ~mthdenv)
+      List.iter exprlst ~f:(do_expr ~scopes ~itree ~mthdenv);
+      t := !(type_of_expr (List.last_exn exprlst))
   | `Let (objid, typeid, init, expr, t) ->
-      (* Scopes.enter_new scopes; *)
-      (* Scopes.add scopes (objid, typeid); *)
-      (* Scopes.exit_curr scopes; *)
-      do_expr ~scopes ~itree ~mthdenv expr
-  | `Case (expr, lst, t) ->
-      (* Scopes.enter_new scopes; *)
-      (* Scopes.add scopes (objid, typeid); *)
-      (* Scopes.exit_curr scopes; *)
+      (match init with
+      | None -> ()
+      | Some e -> do_expr ~scopes ~itree ~mthdenv e);
+      (* FIXME: check comform *)
+      Scopes.enter_new scopes;
+      Scopes.add scopes (objid, typeid);
       do_expr ~scopes ~itree ~mthdenv expr;
-      List.iter lst ~f:(fun (_, _, e) -> do_expr ~scopes ~itree ~mthdenv e)
+      Scopes.exit_curr scopes;
+      t := !(type_of_expr expr)
+  | `Case (expr, lst, t) ->
+      do_expr ~scopes ~itree ~mthdenv expr;
+      List.iter lst ~f:(fun (objid, typeid, e) ->
+	Scopes.enter_new scopes;
+	Scopes.add scopes (objid, typeid);
+	do_expr ~scopes ~itree ~mthdenv e;
+	Scopes.exit_curr scopes);
+      t := Some "Bool"			(*FIXME*)
   | `New (typeid, t) ->
       t := Some typeid
   | `Isvoid (expr, t) ->
@@ -121,30 +134,56 @@ let rec do_expr ~scopes ~itree ~mthdenv = function
       t := Some "Bool"
   | `Plus (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Int"
+	  or !(type_of_expr expr2) <> Some "Int" then
+	eprintf "operand of (+) is not Int.\n";
       t := Some "Int"
   | `Minus (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Int"
+	  or !(type_of_expr expr2) <> Some "Int" then
+	eprintf "operand of (-) is not Int.\n";
       t := Some "Int"
   | `Times (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Int"
+	  or !(type_of_expr expr2) <> Some "Int" then
+	eprintf "operand of (*) is not Int.\n";
       t := Some "Int"
   | `Div (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Int"
+	  or !(type_of_expr expr2) <> Some "Int" then
+	eprintf "operand of (/) is not Int.\n";
       t := Some "Int"
   | `Lt (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Int"
+	  or !(type_of_expr expr2) <> Some "Int" then
+	eprintf "operand of (<) is not Int.\n";
       t := Some "Bool"
   | `Le (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      if !(type_of_expr expr1) <> Some "Int"
+	  or !(type_of_expr expr2) <> Some "Int" then
+	eprintf "operand of (<=) is not Int.\n";
       t := Some "Bool"
   | `Eq (expr1, expr2, t) ->
       List.iter [expr1; expr2] ~f:(do_expr ~scopes ~itree ~mthdenv);
+      let t1, t2 = (!(type_of_expr expr1), !(type_of_expr expr2)) in
+      if t1 <> t2 or not (List.exists ["Int"; "String"; "Bool"] ~f:(fun x ->
+        t1 = Some x)) then
+        eprintf "operand of (=) not same, or not belong to (Int, String, Bool)\n";
       t := Some "Bool"
   | `Complmnt (expr, t) ->
       do_expr ~scopes ~itree ~mthdenv expr;
+      if !(type_of_expr expr) <> Some "Int" then
+	eprintf "operand of (~) is not Int.\n";
       t := Some "Int"
   | `Not (expr, t) ->
       do_expr ~scopes ~itree ~mthdenv expr;
+      if !(type_of_expr expr) <> Some "Bool" then
+	eprintf "operand of (not) is not Bool.\n";
       t := Some "Bool"
   | `Paren expr ->
       do_expr ~scopes ~itree ~mthdenv expr
