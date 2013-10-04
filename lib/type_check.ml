@@ -273,12 +273,21 @@ let do_formal (`Formal (objid, typeid)) =
 let do_feature = function
   | `Attr (_, _, None) ->
       ()
-  | `Attr (_, _, Some e) ->
-      do_expr e
-  | `Method (_, formals, _, expr) ->
+  | `Attr (objid, typeid, Some expr) ->
+      do_expr expr;
+      if not ((is_legal_type (type_of_expr expr))
+                && is_conform
+		(Option.value_exn (type_of_expr expr)) typeid) then
+        eprintf "attribute (%s.%s) initialize type not conform.\n"
+	  !clsname objid
+  | `Method (objid, formals, typeid, expr) ->
       Scopes.enter_new !scopes;
       List.iter formals ~f:do_formal;
       do_expr expr;
+      if not ((is_legal_type (type_of_expr expr))
+                && is_conform
+                (Option.value_exn (type_of_expr expr)) typeid) then
+        eprintf "method (%s.%s) return type not conform.\n" !clsname objid;
       Scopes.exit_curr !scopes
 
 let rec insert_attr clsname =
@@ -297,6 +306,8 @@ let rec insert_attr clsname =
 
 let do_class (`Class (cls, parent, features)) =
   clsname := cls;
+  Scopes.enter_new !scopes;
+  Scopes.add !scopes ("self", "SELF_TYPE");
   insert_attr !clsname;
   List.iter features ~f:do_feature
 

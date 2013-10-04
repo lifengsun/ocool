@@ -31,7 +31,7 @@ type expr = [
   | `Complmnt  of expr * (typeid option ref)
   | `Not       of expr * (typeid option ref)
   | `Paren     of expr			(* parenthesis *)
-  | `InterExpr of string		(* internal expression *)
+  | `InterExpr of objid * (typeid option ref) (* internal expression *)
   ]
 
 type formal = [
@@ -73,7 +73,7 @@ let rec type_of_expr = function
   | `Complmnt (_, t)          -> !t
   | `Not (_, t)               -> !t
   | `Paren expr               -> type_of_expr expr
-  | `InterExpr _              -> None
+  | `InterExpr (_, t)         -> !t
 
 let out ~level ls =
   let print_space ~level =
@@ -174,7 +174,7 @@ let rec print_expr level expr =
 	print_expr (level + 1) expr
     | `Paren expr ->
 	print_expr level expr
-    | `InterExpr s ->
+    | `InterExpr (s, t) ->
 	out ~level [(1, "internal expression " ^ s)]
   end;
   match expr with

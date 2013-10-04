@@ -29,7 +29,7 @@ type expr = [
   | `Complmnt  of expr * (typeid option ref)
   | `Not       of expr * (typeid option ref)
   | `Paren     of expr			(* parenthesis *)
-  | `InterExpr of string		(* internal expression *)
+  | `InterExpr of objid * (typeid option ref) (* internal expression *)
   ]
 
 type formal = [
