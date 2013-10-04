@@ -8,7 +8,7 @@ type signt      = param_type list * retn_type
 
 val create : unit -> t
 val insert : t -> name:name -> signt:signt -> unit
-val find   : t -> name:name -> signt option
+val find   : t -> Inherit_tree.t -> name:name -> signt option
 val iter   : t -> f:(name:name -> signt:signt -> unit) -> unit
 val build  : cls list -> t
 val print  : t -> unit

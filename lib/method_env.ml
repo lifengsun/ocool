@@ -14,8 +14,17 @@ let create () = Hashtbl.create ~hashable:Hashtbl.Poly.hashable ()
 let insert table ~name:(clsname, mthdname) ~signt:(paramtype, rtntype) =
   Hashtbl.replace table ~key:(clsname, mthdname) ~data:(paramtype, rtntype)
 
-let find table ~name:(clsname, mthdname) =
-  Hashtbl.find table (clsname, mthdname)
+let rec find table itree ~name:(clsname, mthdname) =
+  if clsname = "" then
+    None
+  else
+    match Hashtbl.find table (clsname, mthdname) with
+    | Some _ as a -> a
+    | None ->
+	match Inherit_tree.parent itree clsname with
+	| None -> None
+	| Some parent ->
+	    find table itree ~name:(parent, mthdname)
 
 let iter table ~f =
   let g ~key:(clsname, mthdname) ~data:(param_types, retn_type) =

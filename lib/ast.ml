@@ -50,30 +50,30 @@ type cls = [
 exception SyntaxError of string
 
 let rec type_of_expr = function
-  | `Bool (_, t)              -> t
-  | `Int (_, t)               -> t
-  | `String (_, t)            -> t
-  | `Ident (_, t)             -> t
-  | `Assign (_, _, t)         -> t
-  | `Dispatch (_, _, _, _, t) -> t
-  | `Cond (_, _, _, t)        -> t
-  | `Loop (_, _, t)           -> t
-  | `Block (_, t)             -> t
-  | `Let (_, _, _, _, t)      -> t
-  | `Case (_, lst, t)         -> t
-  | `New (_, t)               -> t
-  | `Isvoid (_, t)            -> t
-  | `Plus (_, _, t)           -> t
-  | `Minus (_, _, t)          -> t
-  | `Times (_, _, t)          -> t
-  | `Div (_, _, t)            -> t
-  | `Lt (_, _, t)             -> t
-  | `Le (_, _, t)             -> t
-  | `Eq (_, _, t)             -> t
-  | `Complmnt (_, t)          -> t
-  | `Not (_, t)               -> t
+  | `Bool (_, t)              -> !t
+  | `Int (_, t)               -> !t
+  | `String (_, t)            -> !t
+  | `Ident (_, t)             -> !t
+  | `Assign (_, _, t)         -> !t
+  | `Dispatch (_, _, _, _, t) -> !t
+  | `Cond (_, _, _, t)        -> !t
+  | `Loop (_, _, t)           -> !t
+  | `Block (_, t)             -> !t
+  | `Let (_, _, _, _, t)      -> !t
+  | `Case (_, lst, t)         -> !t
+  | `New (_, t)               -> !t
+  | `Isvoid (_, t)            -> !t
+  | `Plus (_, _, t)           -> !t
+  | `Minus (_, _, t)          -> !t
+  | `Times (_, _, t)          -> !t
+  | `Div (_, _, t)            -> !t
+  | `Lt (_, _, t)             -> !t
+  | `Le (_, _, t)             -> !t
+  | `Eq (_, _, t)             -> !t
+  | `Complmnt (_, t)          -> !t
+  | `Not (_, t)               -> !t
   | `Paren expr               -> type_of_expr expr
-  | `InterExpr _              -> ref None
+  | `InterExpr _              -> None
 
 let out ~level ls =
   let print_space ~level =
@@ -180,7 +180,7 @@ let rec print_expr level expr =
   match expr with
   | `Paren _ -> ()
   | _ ->
-      match !(type_of_expr expr) with
+      match type_of_expr expr with
       | None ->
 	  out ~level [(0, ": _no_type")]
       | Some typeid ->
