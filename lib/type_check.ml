@@ -8,12 +8,12 @@ let mthdenv = ref (Method_env.create ())
 let itree   = ref (Inherit_tree.create ())
 
 (* is t1 <= t2 *)
-let rec is_comform t1 t2 =
+let rec is_conform t1 t2 =
   let rec aux t1 t2 =
     if t1 = t2 || (t1 = "Object" && t2 <> "Object") then
       true
     else
-      is_comform (Option.value_exn (Inherit_tree.parent !itree ~name:t1)) t2
+      is_conform (Option.value_exn (Inherit_tree.parent !itree ~name:t1)) t2
   in
   aux (if t1 <> "SELF_TYPE" then t1 else !clsname)
     (if t2 <> "SELF_TYPE" then t2 else !clsname)
@@ -95,10 +95,10 @@ let rec do_expr = function
 		  eprintf "cannot determine type of init expression in assignment.\n";
 		  t := Some "Object"
 	      | Some typeid' ->
-		  if is_comform typeid' typeid then
+		  if is_conform typeid' typeid then
 		    t := Some typeid'
 		  else
-		    (eprintf "(%s) not comform (%s).\n" typeid' typeid;
+		    (eprintf "(%s) not conform (%s).\n" typeid' typeid;
 		     t := Some "Object")))
 (*TODO: combine two Dispatches.*)
   | `Dispatch (expr, None, objid, exprlst, tn1) ->
@@ -114,8 +114,8 @@ let rec do_expr = function
 	    else
 	      if List.exists2_exn exprlst params ~f:(fun e ti' ->
 		let ti = Option.value_exn (type_of_expr e) in (*FIXME*)
-		not (is_comform ti ti')) then
-		eprintf "argument types not comform.\n";
+		not (is_conform ti ti')) then
+		eprintf "argument types not conform.\n";
 	    if ret <> "SELF_TYPE" then
 	      tn1 := Some ret
 	    else
@@ -128,8 +128,8 @@ let rec do_expr = function
       List.iter exprlst ~f:do_expr;
       if is_legal_type (type_of_expr expr) && is_legal_type (Some t) then
 	let t0 = Option.value_exn (type_of_expr expr) in
-	if not (is_comform t0 t) then
-	  eprintf "type (%s) not comform (%s).\n" t0 t;
+	if not (is_conform t0 t) then
+	  eprintf "type (%s) not conform (%s).\n" t0 t;
 	(match Method_env.find !mthdenv !itree
 	    ~name:((if t <> "SELF_TYPE" then t else !clsname), objid) with
 	| Some (params, ret) ->
@@ -138,8 +138,8 @@ let rec do_expr = function
 	    else
 	      if List.exists2_exn exprlst params ~f:(fun e ti' ->
 		let ti = Option.value_exn (type_of_expr e) in (*FIXME*)
-		not (is_comform ti ti')) then
-		eprintf "argument types not comform.\n";
+		not (is_conform ti ti')) then
+		eprintf "argument types not conform.\n";
 	    if ret <> "SELF_TYPE" then
 	      tn1 := Some ret
 	    else
@@ -178,10 +178,10 @@ let rec do_expr = function
 	  if is_legal_type (Some typeid)
 	      && is_legal_type (type_of_expr e) then
 	    let t' = Option.value_exn (type_of_expr e) in
-	    if is_comform t' typeid then
+	    if is_conform t' typeid then
 	       Scopes.add !scopes (objid, typeid)
 	    else
-	      (eprintf "(%s) not comform to (%s).\n" t' typeid;
+	      (eprintf "(%s) not conform to (%s).\n" t' typeid;
 	       Scopes.add !scopes (objid, "Object"));
 	  else
 	    (eprintf "illegal types ( %s ) in LET bindings.\n" typeid;
